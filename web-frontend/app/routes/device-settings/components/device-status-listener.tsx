@@ -1,13 +1,16 @@
 import { useDataChannel } from '@livekit/components-react';
 import { useState } from 'react';
 
+import { usePersistentTab } from '@/hooks/store/use-persistent-tab';
+
 import type { IEdgeDevice, IEdgeDeviceState } from '@/schemas/models';
 
-import { EdgeDeviceListComponent } from './device-list';
+import { EdgeDeviceListComponent, UnregisteredEdgeDeviceList } from './device-list';
 
 export function DeviceDataListener({ devices }: { devices: IEdgeDevice[] }) {
+  const { activeState } = usePersistentTab();
   const [deviceStates, setDeviceStates] = useState<IEdgeDeviceState[]>([]);
-  const [unregisteredDevices, setUnregisteredDevices] = useState<{ device_id: string }[]>([]);
+  const [unregisteredDevices, setUnregisteredDevices] = useState<IEdgeDeviceState[]>([]);
 
   useDataChannel('device_status', (message) => {
     try {
@@ -37,8 +40,8 @@ export function DeviceDataListener({ devices }: { devices: IEdgeDevice[] }) {
         let hasChanges = false;
         dataArray.forEach((data) => {
           if (!devices.some((d) => d.id === data.id)) {
-            if (!next.some((u) => u.device_id === data.id)) {
-              next.push({ device_id: data.id });
+            if (!next.some((u) => u.id === data.id)) {
+              next.push(data);
               hasChanges = true;
             }
           }
@@ -50,5 +53,9 @@ export function DeviceDataListener({ devices }: { devices: IEdgeDevice[] }) {
     }
   });
 
-  return <EdgeDeviceListComponent devices={devices} states={deviceStates} />;
+  return activeState.edge_device === 'REGISTERED' || !activeState.edge_device ? (
+    <EdgeDeviceListComponent devices={devices} states={deviceStates} />
+  ) : (
+    <UnregisteredEdgeDeviceList devices={unregisteredDevices} />
+  );
 }

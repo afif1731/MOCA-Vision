@@ -126,7 +126,7 @@ async def run_camera_process(camera, room, config, backend_url):
         pose_buffer.append(frame_pose_data)
 
         # --- PROSES GCN-LSTM ---
-        new_label, new_conf = gcn_classification(classes, gcn_lstm_model, pose_buffer, frame_count, t_frames, local_device)
+        new_label, new_conf = gcn_classification(classes, gcn_lstm_model, pose_buffer, frame_count, t_frames, local_device) # pyright: ignore[reportArgumentType]
         
         return True, annotated_frame, new_label, new_conf, frame
 

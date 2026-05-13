@@ -61,7 +61,7 @@ export default function CctvSettingsPage() {
       </Text>
 
       <div className="flex w-full flex-row items-center justify-between pb-4">
-        <DeviceListTypeButton listCount={devices.length} />
+        <DeviceListTypeButton registerCount={devices.length} />
 
         <Button asChild variant="default" size="lg" leftIcon={<PlusIcon />}>
           <Link to="/device-settings/create">Create</Link>

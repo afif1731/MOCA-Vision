@@ -29,7 +29,7 @@ export default function LogoutDialog() {
     setIsLoading(true);
     try {
       const response = await api.post('/auth/logout');
-      itemStorage.local.remove('user-data');
+      itemStorage.session.remove('user-data');
 
       revalidator.revalidate();
 
@@ -64,7 +64,7 @@ export default function LogoutDialog() {
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            className="bg-destructive hover:bg-red-700 disabled:opacity-50"
+            className="bg-destructive hover:bg-red-500 disabled:opacity-50"
             disabled={isLoading}
             onClick={(e) => {
               e.preventDefault();

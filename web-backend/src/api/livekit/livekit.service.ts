@@ -56,9 +56,6 @@ export abstract class LiveKitService {
         },
       });
 
-      if (!device)
-        throw new ErrorResponse(StatusCodes.NOT_FOUND, 'Device not found');
-
       const signaturePayload = `${device_id}:${timestamp.getTime()}`;
       const hasher = new CryptoHasher('sha256', LiveKitConfig.DEVICE_SECRET);
 
@@ -70,7 +67,7 @@ export abstract class LiveKitService {
         throw new ErrorResponse(StatusCodes.UNAUTHORIZED, 'Invalid signature');
 
       tokenIdentity = `id_${device_id}`;
-      accessName = device.name;
+      accessName = device?.name || 'Unregistered Device';
     }
 
     const at = new AccessToken(

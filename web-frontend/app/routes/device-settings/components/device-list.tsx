@@ -4,12 +4,15 @@ import {
   CircleXIcon,
   HardDriveIcon,
   MapPinIcon,
+  PlusIcon,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Link } from 'react-router';
 
 import { cn } from '@/lib/utils';
 
 import { Text } from '@/components/helper/text';
+import { Button } from '@/components/ui/button';
 
 import type { IEdgeDevice, IEdgeDeviceState, IEdgeDeviceStatus } from '@/schemas/models';
 
@@ -26,6 +29,67 @@ export function EdgeDeviceListComponent({
         const state = states?.find((state) => state.id === device.id);
 
         return <DeviceItem key={device.id} device={device} state={state} />;
+      })}
+    </div>
+  );
+}
+
+export function UnregisteredEdgeDeviceList({ devices }: { devices?: IEdgeDeviceState[] }) {
+  if (!devices || devices.length === 0)
+    return (
+      <div className="flex w-full flex-row items-center justify-start pt-5">
+        <Text type="h5" className="font-semibold text-red-500">
+          No Unregistered Device...
+        </Text>
+      </div>
+    );
+
+  return (
+    <div className="flex flex-col gap-4">
+      {devices.map((device) => {
+        return (
+          <div
+            key={device.id}
+            className="flex h-fit w-full flex-row items-center justify-evenly gap-6 rounded-xl bg-white px-4 py-3 drop-shadow-black/50 drop-shadow-xl"
+          >
+            <HardDriveIcon className="size-9 stroke-3 text-black" />
+
+            <div className="flex w-full flex-col items-start justify-start gap-4">
+              <Text type="p" className="font-semibold text-red-500">
+                #{device.id}
+              </Text>
+
+              <div className="flex flex-row items-start justify-center gap-4">
+                <DeviceStatusFrame>
+                  <Text type="btn"> CPU: </Text>
+                  <Text type="btn" className="font-semibold text-teal-800">
+                    {device.cpu.toFixed(2) || '-'} %
+                  </Text>
+                </DeviceStatusFrame>
+
+                <DeviceStatusFrame>
+                  <Text type="btn"> RAM: </Text>
+                  <Text type="btn" className="font-semibold text-teal-800">
+                    {device.ram.toFixed(1) || '-'} GB
+                  </Text>
+                </DeviceStatusFrame>
+
+                <DeviceStatusFrame>
+                  <Text type="btn"> Storage: </Text>
+                  <Text type="btn" className="font-semibold text-teal-800">
+                    {device.storage.toFixed(1) || '-'} GB
+                  </Text>
+                </DeviceStatusFrame>
+              </div>
+            </div>
+
+            <Button asChild variant="default" size="icon">
+              <Link to={`/device-settings/create?device_id=${device.id}`}>
+                <PlusIcon />
+              </Link>
+            </Button>
+          </div>
+        );
       })}
     </div>
   );
