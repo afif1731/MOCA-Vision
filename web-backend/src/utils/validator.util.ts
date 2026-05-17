@@ -1,6 +1,10 @@
 import { StatusCodes } from 'http-status-codes';
 
-import { ALLOWED_IMAGE_TYPE, ErrorResponse } from '@/common';
+import {
+  ALLOWED_IMAGE_TYPE,
+  ALLOWED_VIDEO_TYPE,
+  ErrorResponse,
+} from '@/common';
 
 export abstract class AdditionalValidation {
   static isPhoneValid(phone_number: string): boolean {
@@ -39,6 +43,16 @@ export abstract class AdditionalValidation {
       throw new ErrorResponse(
         StatusCodes.UNPROCESSABLE_ENTITY,
         `Image ${file.name} must have jpeg, png, webp, or jpg extension`,
+      );
+
+    return true;
+  }
+
+  static isVideoValid(file: File) {
+    if (!ALLOWED_VIDEO_TYPE.includes(file.type))
+      throw new ErrorResponse(
+        StatusCodes.UNPROCESSABLE_ENTITY,
+        'Video type not allowed',
       );
 
     return true;

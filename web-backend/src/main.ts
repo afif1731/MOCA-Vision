@@ -35,7 +35,7 @@ const uploadFileFolder = process.env.FILE_STORAGE_PATH || 'uploads';
 
 const app = new Elysia({
   serve: {
-    maxRequestBodySize: 1024 * 1024 * 30,
+    maxRequestBodySize: 1024 * 1024 * 80,
   },
 })
   .use(

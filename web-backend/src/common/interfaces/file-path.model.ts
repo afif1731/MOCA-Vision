@@ -1,1 +1,1 @@
-export type IRegisteredFilePath = 'profile-pictures' | 'meme';
+export type IRegisteredFilePath = 'profile-pictures' | 'meme' | 'sample-video';

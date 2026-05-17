@@ -11,7 +11,11 @@ export abstract class FileManager {
    * @param {string} file_folder_path lokasi upload file dengan format /uploads/{file_folder_path}/{filename}
    * @param {File} file file yang mau diupload
    */
-  static async upload(file_folder_path: IRegisteredFilePath, file?: File) {
+  static async upload(
+    file_folder_path: IRegisteredFilePath,
+    file?: File,
+    no_timeline?: boolean,
+  ) {
     if (!file) return;
 
     const fileExtension = path.extname(file.name);
@@ -22,7 +26,9 @@ export abstract class FileManager {
     cleaned = cleaned.replaceAll(/\s+/g, '_').slice(0, 120);
 
     const timestamp = Date.now();
-    const newFileName = `${cleaned}_${timestamp}${fileExtension}`;
+    const newFileName = no_timeline
+      ? `${cleaned}${fileExtension}`
+      : `${cleaned}_${timestamp}${fileExtension}`;
 
     const newFilePath = `uploads/${file_folder_path}/${newFileName}`;
 
@@ -40,9 +46,11 @@ export abstract class FileManager {
 
     const relativePath = file_path.replace(/^uploads\//, '');
 
-    if (!existsSync(`${uploadFileFolder}/${relativePath}`)) return;
+    if (!existsSync(`${uploadFileFolder}/${relativePath}`)) return false;
 
     const file = Bun.file(`${uploadFileFolder}/${relativePath}`);
     await file.delete();
+
+    return true;
   }
 }
