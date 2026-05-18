@@ -31,7 +31,9 @@ export default function CctvSettingsPage() {
   const { token } = useLiveKitStore();
   const serverUrl = import.meta.env.VITE_LIVEKIT_URL;
 
-  setState('unregistered_devices', '');
+  useEffect(() => {
+    setState('unregistered_devices', '');
+  }, [setState]);
 
   useEffect(() => {
     const fetchDevices = async () => {

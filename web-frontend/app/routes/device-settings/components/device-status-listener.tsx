@@ -1,5 +1,5 @@
 import { useDataChannel } from '@livekit/components-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { usePersistentTab, useTab } from '@/hooks/store/use-persistent-tab';
 
@@ -12,6 +12,10 @@ export function DeviceDataListener({ devices }: { devices: IEdgeDevice[] }) {
   const { setState: setTab } = useTab();
   const [deviceStates, setDeviceStates] = useState<IEdgeDeviceState[]>([]);
   const [unregisteredDevices, setUnregisteredDevices] = useState<IEdgeDeviceState[]>([]);
+
+  useEffect(() => {
+    setTab('unregistered_devices', `${unregisteredDevices.length}`);
+  }, [unregisteredDevices.length, setTab]);
 
   useDataChannel('device_status', (message) => {
     try {
@@ -47,9 +51,6 @@ export function DeviceDataListener({ devices }: { devices: IEdgeDevice[] }) {
             }
           }
         });
-
-        if (hasChanges) setTab('unregistered_devices', `${next.length}`);
-        else setTab('unregistered_devices', `${prev.length}`);
 
         return hasChanges ? next : prev;
       });
