@@ -18,7 +18,7 @@ echo 'export UV_CACHE_DIR="/mnt/sdcard/uv-cache"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-1. Create a venv and install the dependencies. we'll install tflite-runtime from pycoral
+1. Create a venv and install the dependencies. 
 
 ```shell
 uv venv --python 3.9.25

@@ -1,6 +1,4 @@
---extra-index-url https://google-coral.github.io/py-repo/
 tflite-runtime==2.5.0.post1
-pycoral==2.0.0
 opencv-python-headless==4.11.0.86
 numpy==1.26.4
 livekit==1.1.8
