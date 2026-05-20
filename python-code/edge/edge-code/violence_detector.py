@@ -123,17 +123,16 @@ async def run_camera_process(camera, room, config, backend_url):
     # --- SETUP KAMERA & BUFFER ---
     cap = None
 
-    match source_type:
-        case 'LOCAL':
-            cap = cv2.VideoCapture(int(input_source))
-        case 'STATIC_FILE':
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-            file_path = os.path.join(base_dir, "_video_sample", input_source)
+    if source_type == 'LOCAL':
+        cap = cv2.VideoCapture(int(input_source))
+    elif source_type == 'STATIC_FILE':
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(base_dir, "_video_sample", input_source)
 
-            await validate_file(file_path, input_source, backend_url)        
-            cap = cv2.VideoCapture(file_path)
-        case _:
-            cap = cv2.VideoCapture(input_source)
+        await validate_file(file_path, input_source, backend_url)        
+        cap = cv2.VideoCapture(file_path)
+    else:
+        cap = cv2.VideoCapture(input_source)
 
     tracker = CentroidTracker(max_disappeared=50, max_distance=300)
     cluster_buffers = {}
