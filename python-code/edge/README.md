@@ -52,7 +52,13 @@ YOLO_FILE="yolov8n-pose_full_integer_quant_edgetpu.tflite"
 GCN_FILE="GCN_LSTM_best_int8_edgetpu.tflite"
 ```
 
-7. run the code
+7. Run the AI Model using Coral's build-in python 3.7
+
+```shell
+python3 edge-code/ai_model.py
+```
+
+8. Run the app using uv
 
 ```shell
 uv run --env-file .env edge-code/app.py
