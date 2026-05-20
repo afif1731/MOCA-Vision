@@ -9,7 +9,6 @@ import numpy as np
 from collections import deque
 import tflite_runtime.interpreter as tflite
 
-# Modul pendukung bawaan
 from lib.detector import yolo_pose_extraction, gcn_classification
 from lib.crowd_cluster import CentroidTracker, spatial_clustering
 
