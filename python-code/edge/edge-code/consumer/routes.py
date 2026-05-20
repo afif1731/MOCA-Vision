@@ -8,22 +8,20 @@ async def route_backend_request(payload: dict, app_context: dict):
     method = payload.get('method')
     data = payload.get('data', {})
 
-    match service:
-        case 'CAMERA':
-            match method:
-                case 'patch':
-                    await CameraService.patch(data, app_context)
-                    pass
-                case 'delete':
-                    await CameraService.delete(data, app_context)
-                    pass
-                case _:
-                    logger.warning(f"Method {method} not recognized for service CAMERA")
-                    pass
-        
-        case 'DEVICE':
-            pass
-        
-        case _:
-            logger.warning(f"Service {service} not recognized")
-            pass
+    if service == 'CAMERA':
+        if method == 'patch':
+            await CameraService.patch(data, app_context)
+            return
+        elif method == 'delete':
+            await CameraService.delete(data, app_context)
+            return
+        else:
+            logger.warning(f"Method {method} not recognized for service CAMERA")
+            return
+    
+    elif service == 'DEVICE':
+        return
+    
+    else:
+        logger.warning(f"Service {service} not recognized")
+        return

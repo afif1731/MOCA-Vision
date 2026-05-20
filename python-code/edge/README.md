@@ -21,7 +21,7 @@ source ~/.bashrc
 1. Create a venv and install the dependencies
 
 ```shell
-uv venv --python 3.11.13
+uv venv --python 3.9.25
 
 uv pip install -r requirements.edge.txt
 ```
