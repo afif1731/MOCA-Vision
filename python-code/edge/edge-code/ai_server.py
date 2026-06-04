@@ -115,9 +115,14 @@ def handle_client(conn, addr):
             max_disappeared=CENTROID_TRACKER_MAX_DISAPPEARED,
             max_distance=CENTROID_TRACKER_MAX_DISTANCE
         )
+        individual_tracker = CentroidTracker(
+            max_disappeared=30,
+            max_distance=150
+        )
         
         cluster_buffers = {}
         cluster_labels = {}
+        cluster_slot_assignment = {}
         frame_count = 0
 
         logger.info(f"[{camera_id}] Starting AI Inference Loop...")
@@ -149,6 +154,12 @@ def handle_client(conn, addr):
             )
             t_yolo = time.time()
             
+            # --- INDIVIDUAL TRACKING ---
+            all_pelvis = [p["pelvis"] for p in people]
+            tracked_individuals = individual_tracker.update(all_pelvis)
+            for idx, person in enumerate(people):
+                person["individual_id"] = tracked_individuals.get(idx, -1)
+            
             clusters = spatial_clustering(
                 people=people,
                 max_distance=SPATIAL_CLUSTERING_MAX_DISTANCE
@@ -163,19 +174,47 @@ def handle_client(conn, addr):
             tracked = tracker.update(cluster_centroids)
             events = []
             
+            active_ind_ids = set(individual_tracker.objects.keys())
+            
             for cluster_idx, object_id in tracked.items():
                 if object_id not in cluster_buffers:
                     cluster_buffers[object_id] = deque(maxlen=t_frames)
                     cluster_labels[object_id] = {"label": "analyzing", "conf": 0.0}
+                    cluster_slot_assignment[object_id] = {}
                     
                 cluster_people = clusters[cluster_idx]
-                num_people = min(len(cluster_people), m_people)
+                
+                slot_assignment = cluster_slot_assignment[object_id]
+                
+                # Prune old individuals
+                for ind_id in list(slot_assignment.keys()):
+                    if ind_id not in active_ind_ids:
+                        del slot_assignment[ind_id]
+                        
+                used_slots = set(slot_assignment.values())
+                
+                # Assign new individuals
+                for person in cluster_people:
+                    ind_id = person["individual_id"]
+                    if ind_id == -1:
+                        continue
+                    if ind_id not in slot_assignment:
+                        for slot in range(m_people):
+                            if slot not in used_slots:
+                                slot_assignment[ind_id] = slot
+                                used_slots.add(slot)
+                                break
+                                
                 frame_pose_data = np.zeros((3, v_joints, m_people))
                 absolute_skeletons = []
                 
-                for m in range(num_people):
-                    person = cluster_people[m]
-                    frame_pose_data[:, :, m] = person["relative_kpts"]
+                for person in cluster_people:
+                    ind_id = person["individual_id"]
+                    if ind_id in slot_assignment:
+                        m = slot_assignment[ind_id]
+                        if m < m_people:
+                            frame_pose_data[:, :, m] = person["relative_kpts"]
+                    
                     absolute_skeletons.append({
                         "box": person["box"],
                         "keypoints": person["keypoints"]
@@ -211,6 +250,8 @@ def handle_client(conn, addr):
                 if obj_id not in active_object_ids and obj_id not in tracker.objects:
                     del cluster_buffers[obj_id]
                     del cluster_labels[obj_id]
+                    if obj_id in cluster_slot_assignment:
+                        del cluster_slot_assignment[obj_id]
                     
             t_gcn = time.time()
                     
