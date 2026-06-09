@@ -214,6 +214,10 @@ def handle_client(conn, addr):
                         m = slot_assignment[ind_id]
                         if m < m_people:
                             frame_pose_data[:, :, m] = person["relative_kpts"]
+                            # [DEBUG HACK] Duplikat orang ini ke slot M lainnya agar tidak ada nol
+                            for temp_m in range(m_people):
+                                if temp_m != m:
+                                    frame_pose_data[:, :, temp_m] = person["relative_kpts"]
                     
                     absolute_skeletons.append({
                         "box": person["box"],
