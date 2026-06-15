@@ -23,6 +23,7 @@ export const EdgeDeviceStateSchema = v.object({
   cpu: v.number(),
   ram: v.number(),
   storage: v.number(),
+  temperature: v.number(),
 });
 
 export const EdgeDeviceSchema = v.object({

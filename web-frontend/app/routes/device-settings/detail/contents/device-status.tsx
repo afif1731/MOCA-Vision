@@ -94,6 +94,17 @@ export function DeviceStatusContent({
             {device_state?.storage !== undefined ? `${device_state.storage.toFixed(1)}%` : '-'}
           </Text>
         </div>
+
+        <div className="flex flex-col gap-1">
+          <Text type="p" className="text-muted-foreground">
+            Temperature
+          </Text>
+          <Text type="btn" className="font-medium">
+            {device_state?.temperature !== undefined
+              ? `${device_state.temperature.toFixed(1)} °C`
+              : '-'}
+          </Text>
+        </div>
       </div>
 
       {device_status === 'ERROR' && (

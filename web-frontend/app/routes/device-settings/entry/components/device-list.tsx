@@ -170,6 +170,13 @@ function DeviceItem({ device, state }: { device: IEdgeDevice; state?: IEdgeDevic
                   {state?.storage.toFixed(1) || '-'} GB
                 </Text>
               </DeviceStatusFrame>
+
+              <DeviceStatusFrame>
+                <Text type="btn"> Temperature: </Text>
+                <Text type="btn" className="font-semibold text-teal-800">
+                  {state?.temperature.toFixed(1) || '-'} °C
+                </Text>
+              </DeviceStatusFrame>
             </>
           )}
         </div>
