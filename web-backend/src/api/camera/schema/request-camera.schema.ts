@@ -9,7 +9,7 @@ export const CreateCameraRequestSchema = t.Object({
   source_type: t.Enum(CameraSourceType),
   rtsp_username: t.Optional(StringSchema.text),
   rtsp_password: t.Optional(StringSchema.text),
-  device_id: t.Optional(StringSchema.uuid),
+  device_id: t.Optional(t.Nullable(StringSchema.uuid)),
 });
 
 export const EditCameraRequestSchema = t.Partial(

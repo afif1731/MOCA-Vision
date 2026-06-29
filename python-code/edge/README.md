@@ -87,7 +87,7 @@ uv run --env-file .env edge-code/app.py
 
 We'll be using `systemd` to run the code on background
 
-1. Create a new service file (ex: `mocavis-edge.service` and `mocavis-edge.service`) and then copy the content of `systemd-service/mocavis-edge-code.conf` to your new file. Make sure to edit the content.
+1. Create a new service file (ex: `mocavis-edge.service` and `mocavis-ai.service`) and then copy the content of `systemd-service/mocavis-edge.service` and `systemd-service/mocavis-ai.service` to your new file. Make sure to edit the content.
 
 ```shell
 sudo nano /etc/systemd/system/mocavis-edge.service

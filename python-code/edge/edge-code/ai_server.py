@@ -31,8 +31,11 @@ YOLO_IMGSZ = 256
 YOLO_PERSON_CONFIDENCE_THRESHOLD = 0.15
 YOLO_IOU_THRESHOLD = 0.45
 
-CENTROID_TRACKER_MAX_DISAPPEARED = 200
-CENTROID_TRACKER_MAX_DISTANCE = 300
+GROUP_TRACKER_MAX_DISAPPEARED = 200
+GROUP_TRACKER_MAX_DISTANCE = 300
+
+INDIVIDUAL_TRACKER_MAX_DISAPPEARED = 30
+INDIVIDUAL_TRACKER_MAX_DISTANCE = 150
 
 SPATIAL_CLUSTERING_MAX_DISTANCE = 200
 
@@ -121,12 +124,12 @@ def handle_client(conn, addr):
             return
 
         tracker = CentroidTracker(
-            max_disappeared=CENTROID_TRACKER_MAX_DISAPPEARED,
-            max_distance=CENTROID_TRACKER_MAX_DISTANCE
+            max_disappeared=GROUP_TRACKER_MAX_DISAPPEARED,
+            max_distance=GROUP_TRACKER_MAX_DISTANCE
         )
         individual_tracker = CentroidTracker(
-            max_disappeared=30,
-            max_distance=150
+            max_disappeared=INDIVIDUAL_TRACKER_MAX_DISAPPEARED,
+            max_distance=INDIVIDUAL_TRACKER_MAX_DISTANCE
         )
         
         cluster_buffers = {}
@@ -234,7 +237,7 @@ def handle_client(conn, addr):
                 
                 cluster_buffers[object_id].append(frame_pose_data)
                 
-                # --- PROSES GNN-TCN ---
+                # --- PROSES GCN-TCN ---
                 new_label, new_conf, all_conf = gnn_classification(
                     classes,
                     gnn_backbone_interpreter,

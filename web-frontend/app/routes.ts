@@ -15,6 +15,10 @@ export default [
       route('create', 'routes/device-settings/create/index.tsx'),
       route(':device_id', 'routes/device-settings/detail/index.tsx'),
     ]),
+    ...prefix('footage-log', [
+      index('routes/footage-log/entry/index.tsx'),
+      route(':anomaly_id', 'routes/footage-log/detail/index.tsx'),
+    ]),
   ]),
 
   layout('routes/layouts/authenticated-layout.tsx', [route('profile', 'routes/profile/index.tsx')]),

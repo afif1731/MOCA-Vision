@@ -1,10 +1,16 @@
-import { Trash2Icon, VideoIcon } from 'lucide-react';
-import { useLoaderData } from 'react-router';
+// biome-ignore-all lint/suspicious/noExplicitAny: any required for now
+import { PlayIcon, Trash2Icon, VideoIcon } from 'lucide-react';
+import { useState } from 'react';
+import { useLoaderData, useRevalidator } from 'react-router';
 
-import { cn } from '@/lib/utils';
+import useDialogStore from '@/hooks/store/use-dialog';
+import { api } from '@/lib/axios';
+import { cn, handleApiResponseError } from '@/lib/utils';
 
 import { Text } from '@/components/helper/text';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/toast';
 
 import type { IDeviceCamera } from '@/schemas/models';
 
@@ -13,6 +19,7 @@ import type { clientLoader } from '..';
 
 export function DeviceCameraList({ cameras }: { cameras: IDeviceCamera[] }) {
   const { device } = useLoaderData<typeof clientLoader>();
+  const revalidator = useRevalidator();
 
   return (
     <div
@@ -30,14 +37,40 @@ export function DeviceCameraList({ cameras }: { cameras: IDeviceCamera[] }) {
         )}
       >
         {cameras.map((camera) => (
-          <DeviceCamera key={`camera_${camera.id}`} camera={camera} />
+          <DeviceCamera key={`camera_${camera.id}`} camera={camera} revalidator={revalidator} />
         ))}
       </div>
     </div>
   );
 }
 
-function DeviceCamera({ camera }: { camera: IDeviceCamera }) {
+function DeviceCamera({ camera, revalidator }: { camera: IDeviceCamera; revalidator: any }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const { open } = useDialogStore();
+  const confirmDialogId = `disconnect-camera-${camera.id}`;
+
+  const handleDummyRecord = async () => {
+    try {
+      setIsLoading(true);
+      await api.post(`/violence-detection/record-dummy/${camera.id}`);
+      toast.success('Dummy recording triggered successfully.');
+    } catch (error) {
+      handleApiResponseError(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemoveCamera = async () => {
+    try {
+      await api.patch(`/camera/${camera.id}`, { device_id: null });
+      toast.success('Camera disconnected successfully.');
+      revalidator.revalidate();
+    } catch (error) {
+      handleApiResponseError(error);
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -56,9 +89,37 @@ function DeviceCamera({ camera }: { camera: IDeviceCamera }) {
         </DeviceStatusFrame>
       </div>
 
-      <Button size="icon" colors="destructive">
-        <Trash2Icon size={24} className="text-white" />
-      </Button>
+      <div className="flex flex-row gap-2">
+        <Button
+          size="icon"
+          variant="outline"
+          disabled={camera.status !== 'ONLINE' || isLoading}
+          onClick={handleDummyRecord}
+          title="Trigger Dummy Record"
+        >
+          <PlayIcon
+            size={24}
+            className={camera.status === 'ONLINE' ? 'text-teal-600' : 'text-slate-400'}
+          />
+        </Button>
+        <Button
+          size="icon"
+          colors="destructive"
+          disabled={isLoading}
+          onClick={() => open(confirmDialogId)}
+          title="Disconnect Camera"
+        >
+          <Trash2Icon size={24} className="text-white" />
+        </Button>
+      </div>
+
+      <ConfirmDialog
+        dialogId={confirmDialogId}
+        title="Disconnect Camera"
+        description="Are you sure you want to disconnect this camera from this device?"
+        actionText="Disconnect"
+        onConfirm={handleRemoveCamera}
+      />
     </div>
   );
 }

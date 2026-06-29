@@ -1,15 +1,19 @@
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { LiveKitRoom } from '@livekit/components-react';
 import { useEffect } from 'react';
-import { Form, useFetcher } from 'react-router';
-import { createFormData, RemixFormProvider, useRemixForm } from 'remix-hook-form';
+import { Form, useRevalidator } from 'react-router';
+import { RemixFormProvider, useRemixForm } from 'remix-hook-form';
 
+import useDialogStore from '@/hooks/store/use-dialog';
 import useLiveKitStore from '@/hooks/store/use-livekit';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { api } from '@/lib/axios';
 import { cn, generateMeta, handleApiResponseError } from '@/lib/utils';
 
 import TitleSection from '@/components/sections/title';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/toast';
 
 import { EditDeviceSchema, type IDeviceDetail } from '@/schemas/models';
 
@@ -36,19 +40,33 @@ export async function clientLoader({ params: { device_id } }: Route.ClientLoader
 export default function DeviceDetailPage({ loaderData }: Route.ComponentProps) {
   const isMobile = useIsMobile();
   const { token } = useLiveKitStore();
+  const { open } = useDialogStore();
 
   const serverUrl = import.meta.env.VITE_LIVEKIT_URL;
 
-  const { submit } = useFetcher({ key: 'edit-device' });
   const device = loaderData.device;
+
+  const revalidator = useRevalidator();
 
   const methods = useRemixForm({
     mode: 'onBlur',
     submitHandlers: {
-      onValid: (data) => {
-        const formData = createFormData(data, false);
-
-        submit(formData, { method: 'POST', encType: 'multipart/form-data' });
+      onValid: async (data) => {
+        try {
+          const payload = {
+            name: data.name,
+            location: data.location,
+            type: data.type,
+            max_cameras: data.max_cameras
+              ? Number.parseInt(data.max_cameras as string, 10)
+              : undefined,
+          };
+          await api.patch(`/edge-device/${device?.id}`, payload);
+          toast.success('Device updated successfully');
+          revalidator.revalidate();
+        } catch (error) {
+          handleApiResponseError(error);
+        }
       },
     },
     resolver: valibotResolver(EditDeviceSchema),
@@ -97,8 +115,62 @@ export default function DeviceDetailPage({ loaderData }: Route.ComponentProps) {
                 <DeviceStatusContent />
               )}
               <DeviceCameraList cameras={device.cameras} />
+
+              <div className="mt-8 flex flex-col items-center justify-end gap-4 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn(
+                    'w-full sm:w-auto',
+                    device.status === 'ONLINE'
+                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      : 'bg-green-600 text-white hover:bg-green-700'
+                  )}
+                  onClick={() => open('toggle-device-status')}
+                >
+                  Set {device.status === 'ONLINE' ? 'Offline' : 'Online'}
+                </Button>
+
+                <div className="flex w-full flex-row gap-4 sm:ml-auto sm:w-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      reset({
+                        name: device.name ?? '',
+                        type: device.type ?? '',
+                        location: device.location ?? '',
+                        max_cameras: String(device.max_cameras) ?? '',
+                      });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="w-full sm:w-auto"
+                    disabled={methods.formState.isSubmitting}
+                  >
+                    Update
+                  </Button>
+                </div>
+              </div>
             </Form>
           </RemixFormProvider>
+
+          <ConfirmDialog
+            dialogId="toggle-device-status"
+            title={`Set Device to ${device.status === 'ONLINE' ? 'OFFLINE' : 'ONLINE'}`}
+            description={`Are you sure you want to set this device to ${device.status === 'ONLINE' ? 'OFFLINE' : 'ONLINE'}?`}
+            actionText="Confirm"
+            onConfirm={async () => {
+              const newStatus = device.status === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
+              await api.patch(`/edge-device/${device.id}`, { status: newStatus });
+              toast.success(`Device status changed to ${newStatus}`);
+              revalidator.revalidate();
+            }}
+          />
         </div>
       )}
     </>

@@ -1,0 +1,22 @@
+# /etc/systemd/system/mocavis-ai.service
+[Unit]
+Description=MOCA-Vision Edge Code AI Service
+After=network.target
+
+[Service]
+# Run as your default user
+User=mendel
+
+# Make sure this path is directed toward the edge code folder
+WorkingDirectory=/mnt/sdcard/Tugas-Akhir_MonoRepo/python-code/edge
+
+# This one needs to be directed toward the python file on your new uv venv
+ExecStart=python3 ./edge-code/ai_server.py
+
+Restart=on-failure
+RestartSec=10
+
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target

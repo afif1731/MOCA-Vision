@@ -19,6 +19,7 @@ import {
   prisma,
   SuccessResponse,
 } from './common';
+import { livekitListener } from './livekit/listener';
 import { systemCronjobs } from './utils';
 
 const nodeEnv = process.env['NODE_ENV'] || 'development';
@@ -270,6 +271,10 @@ const app = new Elysia({
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
 );
+
+livekitListener.connect().catch(error => {
+  console.error('Failed to start LiveKit Listener on startup:', error);
+});
 
 process.on('SIGINT', () => {
   app.stop();
