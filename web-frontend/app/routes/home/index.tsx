@@ -1,7 +1,9 @@
 import { LiveKitRoom } from '@livekit/components-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
 import useLiveKitStore from '@/hooks/store/use-livekit';
+import { useIdle } from '@/hooks/use-idle';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { itemStorage } from '@/lib/storage';
 import { cn, generateMeta } from '@/lib/utils';
@@ -18,38 +20,59 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export async function clientLoader() {
-  const layoutDetail = await handleCctvContent();
+  const layoutDetails = await handleCctvContent();
 
   let defaultDimension = itemStorage.local.get<number[]>('default_dimension');
 
-  if (layoutDetail[0].json) {
-    defaultDimension = layoutDetail[0].json.dimension || null;
+  if (layoutDetails[0]?.json?.dimension) {
+    defaultDimension = layoutDetails[0].json.dimension;
   }
 
   if (!defaultDimension) {
-    defaultDimension = [2, 2];
+    defaultDimension = [1, 1];
     itemStorage.local.set('default_dimension', defaultDimension);
   }
 
   return {
-    layoutDetail: layoutDetail[0],
+    layoutDetails,
     defaultDimension,
   };
 }
 
 export default function HomePage({ loaderData }: Route.ComponentProps) {
-  const { layoutDetail, defaultDimension } = loaderData;
+  const { layoutDetails, defaultDimension } = loaderData;
   const isMobile = useIsMobile();
+  const isIdle = useIdle(3000);
   const serverUrl = import.meta.env.VITE_LIVEKIT_URL;
 
   const { token } = useLiveKitStore();
-  const [dimension, _setDimension] = useState<number[]>(defaultDimension);
+  const [pageIndex, setPageIndex] = useState(0);
+
+  const isExplicitPaging = layoutDetails.length > 1 && layoutDetails[0]?.page === 1;
+
+  const currentLayoutDetail = isExplicitPaging ? layoutDetails[pageIndex] : layoutDetails[0];
+  const dimension = currentLayoutDetail?.json?.dimension || defaultDimension;
+  const maxTrack = dimension[0] * dimension[1];
+
+  const totalPages = isExplicitPaging
+    ? layoutDetails.length
+    : Math.ceil((currentLayoutDetail?.json?.cameras.length || 0) / maxTrack);
+
+  const localPageIndex = isExplicitPaging ? 0 : pageIndex;
+
+  const handleNext = () => {
+    setPageIndex((prev) => (prev + 1) % totalPages);
+  };
+
+  const handlePrev = () => {
+    setPageIndex((prev) => (prev - 1 + totalPages) % totalPages);
+  };
 
   return (
     <div
       className={cn(
-        'block w-full bg-slate-100',
-        isMobile ? 'min-h-screen' : 'h-screen max-h-screen'
+        'relative block w-full bg-slate-100',
+        'min-h-screen overflow-y-auto lg:h-screen lg:max-h-screen lg:overflow-hidden'
       )}
     >
       {token ? (
@@ -60,7 +83,12 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
           data-lk-theme="default"
           className="flex h-full w-full flex-col px-2 py-2"
         >
-          <LiveVideoPlayer dimension={dimension} content={layoutDetail.json} />
+          <LiveVideoPlayer
+            dimension={dimension}
+            content={currentLayoutDetail?.json || null}
+            pageIndex={localPageIndex}
+            isMobile={isMobile}
+          />
         </LiveKitRoom>
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-4">
@@ -71,6 +99,34 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
             Refresh
           </Button>
         </div>
+      )}
+
+      {!isMobile && totalPages > 1 && (
+        <>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handlePrev}
+            className={cn(
+              'absolute top-1/2 left-4 z-50 hidden h-12 w-12 -translate-y-1/2 rounded-full bg-white/50 shadow-md backdrop-blur-sm transition-opacity duration-300 hover:bg-white lg:flex',
+              isIdle ? 'pointer-events-none opacity-0' : 'opacity-100'
+            )}
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </Button>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleNext}
+            className={cn(
+              'absolute top-1/2 right-4 z-50 hidden h-12 w-12 -translate-y-1/2 rounded-full bg-white/50 shadow-md backdrop-blur-sm transition-opacity duration-300 hover:bg-white lg:flex',
+              isIdle ? 'pointer-events-none opacity-0' : 'opacity-100'
+            )}
+          >
+            <ChevronRight className="h-6 w-6" />
+          </Button>
+        </>
       )}
     </div>
   );

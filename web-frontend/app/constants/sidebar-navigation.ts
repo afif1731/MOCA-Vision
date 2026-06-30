@@ -39,6 +39,7 @@ export const sidebarItems = [
         icon: LayoutGridIcon,
         title: 'Layouts',
         href: '/layout',
+        userAllowed: true,
       },
       {
         icon: HardDriveIcon,
@@ -69,18 +70,18 @@ export const sidebarItems = [
     ],
   },
   {
-    title: 'Alarm',
+    title: 'Report',
     userAllowed: false,
     items: [
       {
         icon: SlidersVerticalIcon,
-        title: 'Settings',
-        href: '/alarm-settings',
+        title: 'WA Report',
+        href: '/report-wa',
       },
       {
         icon: HistoryIcon,
-        title: 'History',
-        href: '/alarm-history',
+        title: 'Email Report',
+        href: '/report-email',
       },
     ],
   },

@@ -37,9 +37,13 @@ interface IVideoPlayer extends ITrackList {
 export function LiveVideoPlayer({
   dimension,
   content,
+  pageIndex = 0,
+  isMobile = false,
 }: {
   dimension: number[];
   content: ILayoutDetail | null;
+  pageIndex?: number;
+  isMobile?: boolean;
 }) {
   const tracks = useTracks([{ source: Track.Source.Camera, withPlaceholder: true }], {
     onlySubscribed: true,
@@ -62,16 +66,18 @@ export function LiveVideoPlayer({
 
   const trackList = useMemo(() => {
     if (content) {
-      return mapPageTracks(dimension, content, tracks);
+      return mapPageTracks(dimension, content, tracks, pageIndex, isMobile);
     }
     return [];
-  }, [dimension, content, tracks]);
+  }, [dimension, content, tracks, pageIndex, isMobile]);
 
   return (
     <>
       {trackList.length > 0 ? (
         <div
-          className={cn('grid h-full w-full items-center justify-items-center gap-2')}
+          className={cn(
+            'flex h-full w-full flex-col gap-2 lg:grid lg:items-center lg:justify-items-center'
+          )}
           style={{
             gridTemplateColumns: `repeat(${dimension[1]}, minmax(0, 1fr))`,
             gridTemplateRows: `repeat(${dimension[0]}, minmax(0, 1fr))`,
@@ -85,7 +91,8 @@ export function LiveVideoPlayer({
               <div
                 key={`${track.trackRef?.participant.identity}_${id}` || `track_${id}`}
                 className={cn(
-                  'group relative col-span-1 row-span-1 flex h-full w-full items-center justify-center bg-black shadow-lg'
+                  'group relative flex w-full shrink-0 items-center justify-center bg-black shadow-lg',
+                  'min-h-[300px] lg:col-span-1 lg:row-span-1 lg:h-full lg:min-h-0 lg:shrink'
                 )}
               >
                 <VideoPlayer
@@ -115,14 +122,20 @@ export function LiveVideoPlayer({
 function mapPageTracks(
   dimension: number[],
   content: ILayoutDetail,
-  tracks: TrackReferenceOrPlaceholder[]
+  tracks: TrackReferenceOrPlaceholder[],
+  pageIndex: number,
+  isMobile: boolean
 ) {
-  const maxTrack = dimension[0] * dimension[1];
+  const maxTrack = isMobile ? content.cameras.length : dimension[0] * dimension[1];
 
   const newTrack: ITrackList[] = [];
+  const startIndex = isMobile ? 0 : pageIndex * maxTrack;
 
   for (let i = 0; i < maxTrack; i++) {
-    const camera = content.cameras[i];
+    const camera = content.cameras[startIndex + i];
+    // On mobile, if we reach the end of cameras, stop rendering empty slots
+    if (isMobile && !camera) continue;
+
     newTrack.push({
       id: camera?.id || null,
       name: camera?.name || '',
@@ -146,11 +159,7 @@ function VideoPlayerError({
   name?: string;
 }) {
   return (
-    <div
-      className={cn(
-        'group relative flex h-full w-full items-center justify-center bg-black shadow-lg'
-      )}
-    >
+    <>
       {type === 'no_signal' && (
         <>
           <Text
@@ -159,18 +168,20 @@ function VideoPlayerError({
           >
             {name}
           </Text>
-          <Text type="p" className="font-bold text-white">
-            No Signal
-          </Text>
+          <div className="flex h-full w-full items-center justify-center">
+            <Text type="p" className="font-bold text-white">
+              No Signal
+            </Text>
+          </div>
           <div
             className={cn(
-              'absolute inset-0 z-30 ring-0 ring-inset transition-all duration-150 hover:ring-4',
+              'pointer-events-none absolute inset-0 z-30 ring-0 ring-inset transition-all duration-150 group-hover:ring-4',
               'ring-slate-500'
             )}
           />
         </>
       )}
-    </div>
+    </>
   );
 }
 
@@ -208,7 +219,7 @@ function VideoPlayer({
       <div
         className={cn(
           'pointer-events-none absolute inset-0 z-30 ring-inset transition-all duration-150',
-          isAbnormal ? 'ring-4 ring-red-500' : 'ring-0 ring-teal-800 hover:ring-4'
+          isAbnormal ? 'ring-4 ring-red-500' : 'ring-0 ring-teal-800 group-hover:ring-4'
         )}
       />
       {eventData && (show_box || show_skeleton) && (

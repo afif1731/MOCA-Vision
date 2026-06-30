@@ -7,6 +7,7 @@ export default [
   layout('routes/layouts/public-layout.tsx', [
     index('routes/home/index.tsx'),
     route('home', 'routes/home/home-redirect.tsx'),
+    route('layout', 'routes/panel-layout/index.tsx'),
   ]),
 
   layout('routes/layouts/private-layout.tsx', [
