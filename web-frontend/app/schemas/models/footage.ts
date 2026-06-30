@@ -15,8 +15,8 @@ export interface IDetectedAnomaly {
   camera_id?: string;
   video_path: string;
   video_duration?: number;
-  video_start_date?: string;
-  video_end_date?: string;
+  video_start_date: string;
+  video_end_date: string;
   anomaly_type: 'ASSAULT' | 'FIGHTING' | 'ROBBERY' | 'SHOOTING';
   confidence: number;
   is_valid?: boolean;

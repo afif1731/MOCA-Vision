@@ -18,6 +18,7 @@ import {
   LoggerConfig,
   prisma,
   SuccessResponse,
+  whatsappClient,
 } from './common';
 import { livekitListener } from './livekit/listener';
 import { systemCronjobs } from './utils';
@@ -84,6 +85,14 @@ const app = new Elysia({
       DATABASE_URL: t.String({
         minLength: 1,
         error: 'DATABASE_URL is required',
+      }),
+      REPORTER_MAIL_USER: t.String({
+        minLength: 1,
+        error: 'REPORTER_MAIL_USER is required',
+      }),
+      REPORTER_MAIL_PASSWORD: t.String({
+        minLength: 1,
+        error: 'REPORTER_MAIL_PASSWORD is required',
       }),
       REDIS_URL: t.String({ default: 'redis://localhost:6379' }),
       FE_URL: t.String({ minLength: 1, error: 'FE_URL is required' }),
@@ -271,6 +280,8 @@ const app = new Elysia({
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
 );
+
+whatsappClient.initialize();
 
 livekitListener.connect().catch(error => {
   console.error('Failed to start LiveKit Listener on startup:', error);

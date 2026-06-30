@@ -14,6 +14,7 @@ node_modules/
 _dataset/
 _reference/
 file-storage/
+.wawebjs-auth/
 
 # Docker
 docker/

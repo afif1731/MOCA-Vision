@@ -4,4 +4,6 @@ export * from './local-date.config';
 export * from './logger.config';
 export * from './prisma-client.config';
 export * from './redis.config';
+export * from './reporter.config';
 export * from './violence-threshold.config';
+export * from './whatsapp-client.config';

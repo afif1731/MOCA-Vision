@@ -20,7 +20,7 @@ export default function TitleSection({
   backAction?: () => void;
 }) {
   return (
-    <div className={cn('flex items-center gap-x-3', className)}>
+    <div className={cn('flex items-center gap-x-3 pb-3', className)}>
       {backTo && (
         <Button
           asChild

@@ -9,6 +9,7 @@
 /* eslint-disable no-constant-condition */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable unicorn/text-encoding-identifier-case */
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -17,11 +18,17 @@ import {
   type RemoteVideoTrack,
   Room,
   RoomEvent,
+  TrackKind,
   VideoStream,
 } from '@livekit/rtc-node';
+import { sleep } from 'bun';
 import { AccessToken } from 'livekit-server-sdk';
 
-import { LiveKitConfig, prisma } from '../common';
+import { MailerService } from '@/api/mailer/mailer.service';
+import { WhatsAppService } from '@/api/whatsapp/whatsapp.service';
+import { type AnomalyType } from '~/generated/prisma/enums';
+
+import { LiveKitConfig, logger, prisma } from '../common';
 import { ViolenceThresholdConfig } from '../common/config/violence-threshold.config';
 import { frameStorageService } from '../redis/frame-storage';
 
@@ -95,22 +102,20 @@ export class LivekitListener {
         dynacast: true,
       });
 
-      console.log(
-        '✅ [LivekitListener] Connected to room:',
-        LiveKitConfig.ROOM_NAME,
+      logger.info(
+        `✅ [LivekitListener] Connected to room: ${LiveKitConfig.ROOM_NAME}`,
       );
 
       this.room.on(
         RoomEvent.TrackSubscribed,
-        (track, publication, participant) => {
-          if (track.kind === 1) {
-            // 1 is usually Video
-            console.log(
+        (track, _publication, participant) => {
+          if (track.kind === TrackKind.KIND_VIDEO) {
+            logger.info(
               `📹 [LivekitListener] Subscribed to video track: ${track.name || 'unnamed'} from ${participant?.identity || 'unknown'}`,
             );
 
             if (!track.name) {
-              console.warn(
+              logger.warn(
                 '⚠️ [LivekitListener] Track name is undefined, ignoring track.',
               );
 
@@ -134,7 +139,6 @@ export class LivekitListener {
 
                   await frameStorageService.saveFrame(trackName, buffer);
 
-                  // Handle active recording
                   if (this.activeRecordings.has(cameraId)) {
                     const session = this.activeRecordings.get(cameraId)!;
 
@@ -152,9 +156,8 @@ export class LivekitListener {
                   }
                 }
               } catch (error) {
-                console.error(
-                  `❌ [LivekitListener] VideoStream error for track ${track.name}:`,
-                  error,
+                logger.error(
+                  `❌ [LivekitListener] VideoStream error for track ${track.name}: ${error}`,
                 );
               }
             })();
@@ -164,21 +167,20 @@ export class LivekitListener {
 
       this.room.on(
         RoomEvent.DataReceived,
-        (payload, participant, kind, topic) => {
+        (payload, _participant, _kind, _topic) => {
           try {
             const dataString = Buffer.from(payload).toString('utf-8');
             const detection: ViolenceDetectionPayload = JSON.parse(dataString);
             this.handleViolenceDetection(detection);
           } catch (error) {
-            console.error(
-              '❌ [LivekitListener] Failed to parse data channel message:',
-              error,
+            logger.error(
+              `❌ [LivekitListener] Failed to parse data channel message: ${error}`,
             );
           }
         },
       );
     } catch (error) {
-      console.error('❌ [LivekitListener] Connection failed:', error);
+      logger.error(`❌ [LivekitListener] Connection failed: ${error}`);
     }
   }
 
@@ -229,23 +231,38 @@ export class LivekitListener {
       }
     }
 
+    const recentRecording = await prisma.detectedAnomalies.findFirst({
+      where: { camera_id: payload.camera_id },
+      select: { created_at: true },
+      orderBy: { created_at: 'desc' },
+    });
+    const currentDate = new Date(Date.now());
+
     if (isViolent && !this.activeRecordings.has(payload.camera_id)) {
-      console.log(
+      if (
+        recentRecording &&
+        recentRecording.created_at.getTime() + 60_000 < currentDate.getTime()
+      ) {
+        logger.info(
+          `💤 [LiveKit Listener] Violence Recording for camera ${payload.camera_id} is on 1 minute cooldown`,
+        );
+
+        return;
+      }
+
+      logger.info(
         `🚨 [LivekitListener] Violence detected on ${payload.camera_id} (${detectedLabel}: ${highestConfidence}). Starting 200 frame capture...`,
       );
 
       const trackName = `track_${payload.camera_id}`;
-      // Fetch the 100 previous frames from Redis
-      const previousFrames = await frameStorageService.getFrames(trackName);
 
-      // Redis lrange returns index 0 (newest) to 99 (oldest) if we use lpush.
-      // We need chronological order: oldest to newest, so we reverse it.
+      const previousFrames = await frameStorageService.getFrames(trackName);
       previousFrames.reverse();
 
       this.activeRecordings.set(payload.camera_id, {
         cameraId: payload.camera_id,
         frames: previousFrames,
-        remaining: 200, // wait for 200 more frames
+        remaining: 200,
         payload: payload,
         highestConfidence,
         detectedLabel,
@@ -254,12 +271,12 @@ export class LivekitListener {
   }
 
   private async finishRecording(session: RecordingSession) {
-    console.log(
+    logger.info(
       `🎥 [LivekitListener] Finished collecting frames for ${session.cameraId}. Encoding video...`,
     );
 
     if (!session.width || !session.height || session.frames.length === 0) {
-      console.error('❌ [LivekitListener] Invalid session data for recording.');
+      logger.error('❌ [LivekitListener] Invalid session data for recording.');
 
       return;
     }
@@ -300,13 +317,12 @@ export class LivekitListener {
       }
 
       default: {
-        console.warn(
+        logger.warn(
           `⚠️ [LivekitListener] Unknown pixel format for size ${firstFrameSize} (WxH: ${width}x${height}). Defaulting to rgba.`,
         );
       }
     }
 
-    // Default framerate: if fps is in payload use it, else 30
     const fps = session.payload.fps || 30;
 
     const ffmpeg = spawn('ffmpeg', [
@@ -322,7 +338,7 @@ export class LivekitListener {
       '-r',
       fps.toString(),
       '-i',
-      '-', // Read from stdin
+      '-',
       '-c:v',
       'libx264',
       '-preset',
@@ -333,20 +349,19 @@ export class LivekitListener {
     ]);
 
     ffmpeg.on('error', error => {
-      console.error(
-        `❌ [LivekitListener] FFmpeg error for ${session.cameraId}:`,
-        error,
+      logger.error(
+        `❌ [LivekitListener] FFmpeg error for ${session.cameraId}: ${error}`,
       );
     });
 
     ffmpeg.on('close', async code => {
       if (code === 0) {
-        console.log(
+        logger.info(
           `✅ [LivekitListener] Video saved successfully to ${outputPath}`,
         );
         await this.saveAnomalyToDB(session, `violence-detection/${fileName}`);
       } else {
-        console.error(`❌ [LivekitListener] FFmpeg exited with code ${code}`);
+        logger.error(`❌ [LivekitListener] FFmpeg exited with code ${code}`);
       }
     });
 
@@ -363,8 +378,7 @@ export class LivekitListener {
     relativeVideoPath: string,
   ) {
     try {
-      // Map label to AnomalyType enum correctly
-      let anomalyType: any = 'ASSAULT';
+      let anomalyType: AnomalyType = 'ASSAULT';
 
       switch (session.detectedLabel) {
         case 'assault': {
@@ -392,33 +406,88 @@ export class LivekitListener {
         session.frames.length / (session.payload.fps || 30),
       );
 
-      await prisma.detectedAnomalies.create({
+      const camera = await prisma.cameras.findUnique({
+        where: { id: session.cameraId },
+        select: { id: true, name: true },
+      });
+      const systemSettings = await prisma.systemSettings.findFirst();
+
+      const videoStartDate = new Date(Date.now() - duration * 1000);
+
+      const newFootage = await prisma.detectedAnomalies.create({
         data: {
           camera_id: session.cameraId,
           video_path: relativeVideoPath,
           video_duration: duration,
           anomaly_type: anomalyType,
           confidence: session.highestConfidence,
-          is_valid: false,
-          is_reported: false,
+          is_reported:
+            !systemSettings?.report_auto_send_wa &&
+            !systemSettings?.report_auto_send_email
+              ? false
+              : true,
           report_sent: {},
-          video_start_date: new Date(Date.now() - duration * 1000),
+          video_start_date: videoStartDate,
           video_end_date: new Date(),
         },
+        select: { id: true },
       });
-      console.log(
+
+      if (systemSettings!.report_auto_send_email) {
+        const emailList = await prisma.emailReceivers.findMany({
+          where: { is_activated: true },
+          select: { email: true },
+        });
+
+        await MailerService.sendViolenceReportMail(
+          emailList.map(receiver => receiver.email),
+          'MOCA-Vision Admin',
+          camera?.name || 'Unnamed Camera',
+          session.detectedLabel,
+          session.highestConfidence,
+          newFootage.id,
+          videoStartDate,
+        );
+
+        logger.info(`📨 [EmailSender] Report Sended to Emails`);
+      }
+
+      if (systemSettings!.report_auto_send_wa) {
+        const waReceiverList = await prisma.waReceivers.findMany({
+          where: { is_activated: true },
+          select: { name: true, wa_chat_id: true, is_group: true },
+        });
+
+        for (const waReceiver of waReceiverList) {
+          await WhatsAppService.sendViolenceDetection(
+            waReceiver.name,
+            camera?.name || 'Unnamed Camera',
+            waReceiver.wa_chat_id,
+            waReceiver.is_group,
+            session.detectedLabel,
+            session.highestConfidence,
+            newFootage.id,
+            videoStartDate,
+          );
+
+          sleep(1000);
+        }
+
+        logger.info(`💚 [WhatsappSender] Report Sended to Whatsapps`);
+      }
+
+      logger.info(
         `💾 [LivekitListener] Anomaly data saved to database for ${session.cameraId}`,
       );
     } catch (error) {
-      console.error(
-        '❌ [LivekitListener] Failed to save anomaly to DB:',
-        error,
+      logger.error(
+        `❌ [LivekitListener] Failed to save anomaly to DB: ${error}`,
       );
     }
   }
 
   public async triggerDummyRecording(cameraId: string) {
-    console.log(
+    logger.info(
       `🧪 [LivekitListener] Dummy recording triggered for ${cameraId}`,
     );
     const dummyPayload: ViolenceDetectionPayload = {

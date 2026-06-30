@@ -14,8 +14,19 @@ export const VideoSampleDeleteRequestSchema = t.Object({
   video_name: StringSchema.text,
 });
 
+export const SystemSettingsUpdateRequestSchema = t.Partial(
+  t.Object({
+    video_retention_days: t.Integer({ minimum: 1 }),
+    report_auto_send_wa: t.BooleanString(),
+    report_auto_send_email: t.BooleanString(),
+  }),
+);
+
 export type IVideoSampleUploadRequest =
   typeof VideoSampleUploadRequestSchema.static;
 
 export type IVideoSampleDeleteRequest =
   typeof VideoSampleDeleteRequestSchema.static;
+
+export type ISystemSettingsUpdateRequest =
+  typeof SystemSettingsUpdateRequestSchema.static;

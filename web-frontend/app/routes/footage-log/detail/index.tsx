@@ -1,7 +1,6 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: any required for now
-import { ArrowLeftIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 
 import useDialogStore from '@/hooks/store/use-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -94,17 +93,13 @@ export default function FootageDetailPage() {
         isMobile ? 'min-h-lvh' : 'h-screen max-h-screen overflow-y-auto'
       )}
     >
-      <TitleSection title={'Footage Details'} />
-
-      <div className="mb-4 flex w-full">
-        <Button asChild variant="outline" leftIcon={<ArrowLeftIcon />}>
-          <Link to="/footage-log">Back to Logs</Link>
-        </Button>
-      </div>
+      <TitleSection title={'Footage Details'} backTo="/footage-log" />
 
       <div className="mt-4 flex flex-col gap-6">
-        <div className="w-full max-w-4xl overflow-hidden rounded-xl bg-black drop-shadow-xl">
-          <Video controls className="h-auto max-h-[60vh] w-full" path={footage.video_path} />
+        <div className="flex w-full justify-center">
+          <div className="w-full max-w-4xl overflow-hidden rounded-xl bg-black drop-shadow-xl">
+            <Video controls className="h-auto max-h-[60vh] w-full" path={footage.video_path} />
+          </div>
         </div>
 
         <div className="flex flex-col gap-6 rounded-xl bg-white p-6 drop-shadow-md">
@@ -140,7 +135,7 @@ export default function FootageDetailPage() {
               <Text type="btn" className="font-semibold text-slate-500">
                 Recorded At
               </Text>
-              <Text type="p">{new Date(footage.created_at).toLocaleString()}</Text>
+              <Text type="p">{new Date(footage.video_start_date).toLocaleString()}</Text>
             </div>
 
             <div className="flex flex-col gap-1">
@@ -167,28 +162,21 @@ export default function FootageDetailPage() {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-row flex-wrap gap-4">
-            <Button
-              onClick={() => handleUpdate(true)}
-              variant={footage.is_valid === true ? 'default' : 'outline'}
-              className={
-                footage.is_valid === true ? 'bg-green-600 text-white hover:bg-green-700' : ''
-              }
-            >
-              Mark as Valid
-            </Button>
-            <Button
-              onClick={() => handleUpdate(false)}
-              variant={footage.is_valid === false ? 'default' : 'outline'}
-              className={footage.is_valid === false ? 'bg-red-600 text-white hover:bg-red-700' : ''}
-            >
-              Mark as Invalid
-            </Button>
-            <Button
-              onClick={() => open(confirmDialogId)}
-              variant="outline"
-              className="bg-red-600 text-white hover:bg-red-700"
-            >
+          <div className="mt-6 flex flex-row flex-wrap justify-end gap-4">
+            {footage.is_valid ? (
+              <Button
+                onClick={() => handleUpdate(false)}
+                variant="default"
+                className="bg-red-600 text-white hover:bg-red-700"
+              >
+                Mark as Invalid
+              </Button>
+            ) : (
+              <Button onClick={() => handleUpdate(true)} variant="default">
+                Mark as Valid
+              </Button>
+            )}
+            <Button onClick={() => open(confirmDialogId)} variant="default" colors="destructive">
               Delete Footage
             </Button>
           </div>

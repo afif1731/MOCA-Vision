@@ -6,6 +6,8 @@ import { prisma } from '../../../src/common';
 interface ISystemSettings {
   id: string;
   video_retention_days: string;
+  report_auto_send_wa: string;
+  report_auto_send_email: string;
 }
 
 export const systemSettingsSeed = async () => {
@@ -22,9 +24,11 @@ export const systemSettingsSeed = async () => {
         create: {
           id: data.id,
           video_retention_days: Number.parseInt(data.video_retention_days),
+          report_auto_send_wa: data.report_auto_send_wa === 'true',
         },
         update: {
           video_retention_days: Number.parseInt(data.video_retention_days),
+          report_auto_send_email: data.report_auto_send_email === 'true',
         },
       });
     }

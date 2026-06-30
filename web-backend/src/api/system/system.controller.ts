@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { AuthPlugin, SuccessResponse } from '@/common';
 
 import {
+  SystemSettingsUpdateRequestSchema,
   VideoSampleDeleteRequestSchema,
   VideoSampleUploadRequestSchema,
 } from './schema';
@@ -59,6 +60,33 @@ export const SystemController = new Elysia({ name: 'system-controller' })
             allowed_roles: 'ADMIN',
           },
           body: VideoSampleDeleteRequestSchema,
+        },
+      )
+      .get(
+        '/settings',
+        async () => {
+          const result = await SystemService.getSystemSettings();
+
+          return new SuccessResponse(
+            StatusCodes.OK,
+            'Get system settings',
+            result,
+          );
+        },
+        {
+          authPlugin: { allowed_roles: 'ADMIN' },
+        },
+      )
+      .patch(
+        '/settings',
+        async ({ body }) => {
+          await SystemService.updateSystemSettings(body);
+
+          return new SuccessResponse(StatusCodes.OK, 'System settings updated');
+        },
+        {
+          authPlugin: { allowed_roles: 'ADMIN' },
+          body: SystemSettingsUpdateRequestSchema,
         },
       );
 

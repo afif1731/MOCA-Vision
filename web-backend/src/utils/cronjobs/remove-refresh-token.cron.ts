@@ -1,4 +1,4 @@
-import cron from '@elysiajs/cron';
+import { cron } from '@elysiajs/cron';
 
 import { logger, prisma } from '@/common';
 

@@ -19,20 +19,25 @@ services:
       - mocavis-network
 
   mocavis-be-redis:
-    image: redis:latest
+    image: redis:8.8.0
     container_name: mocavis-redis
     ports:
       - ${REDIS_PORT}:6379
-    expose:
-      - ${REDIS_PORT}
+    command: [
+        "redis-server", 
+        "/etc/redis/redis.conf", 
+        "--user", "${REDIS_USER}", "on", ">${REDIS_PASSWORD}", "~*", "+@all", 
+        "--user", "default", "off"
+      ]
     restart: always
     volumes:
       - ./conf/redis.conf:/etc/redis/redis.conf
+      - redis_data:/data
     networks:
       - mocavis-network
 
   mocavis-rstp:
-    image: livekit/livekit-server:latest
+    image: livekit/livekit-server:v1.13.2
     container_name: mocavis-livekit-server
     network_mode: "host"
     command: --config /etc/livekit.yaml
@@ -55,6 +60,7 @@ services:
 
 volumes:
   postgres:
+  redis_data:
 
 networks:
   mocavis-network:

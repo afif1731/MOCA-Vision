@@ -53,3 +53,4 @@ server
 server.exe
 /generated/
 uploads/
+.wwebjs_cache

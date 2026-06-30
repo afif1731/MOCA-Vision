@@ -62,7 +62,6 @@ model Users {
   layout_pages        CctvLayoutPages[]
   wa_receiver         WaReceivers[]
   email_receiver      EmailReceivers[]
-  telegram_receiver   TelegramReceivers[]
 }
 
 model RefreshTokens {
@@ -80,6 +79,8 @@ model RefreshTokens {
 model SystemSettings {
   id                      String    @id @default(uuid(7))
   video_retention_days    Int       @default(7)
+  report_auto_send_wa     Boolean   @default(false)
+  report_auto_send_email  Boolean   @default(false)
 }
 
 model EdgeDevices {
@@ -152,7 +153,7 @@ model CctvLayoutPages {
 model DetectedAnomalies {
   id                String          @id @default(uuid(7))
   camera_id         String?
-  video_path        String
+  video_path        String?
   video_duration    Int?
   video_start_date  DateTime?
   video_end_date    DateTime?
@@ -177,109 +178,31 @@ model ReportPlatforms {
 
   created_at        DateTime        @default(now())
   updated_at        DateTime        @default(now()) @updatedAt
-
-  wa_sent_detail        WaSentDetails?
-  email_sent_detail     EmailSentDetails?
-  telegram_sent_Detail  TelegramSentDetails?
-}
-
-model WaSentDetails {
-  id                  String            @id @default(uuid(7))
-  wa_api_token        String
-  wa_number_id        String
-  // Tambahkan field lainnya kalau perlu
-
-  report_platform_id  String            @unique
-
-  report_platform     ReportPlatforms   @relation(fields: [report_platform_id], references: [id], onDelete: Cascade)
-
-  created_at          DateTime          @default(now())
-  updated_at          DateTime          @default(now()) @updatedAt
-
-  receivers           WaReceivers[]
 }
 
 model WaReceivers {
   id                String          @id @default(uuid(7))
   name              String
-  wa_number         String
-  wa_sent_detail_id String
+  wa_chat_id        String
+  is_group          Boolean         @default(false)
   user_id           String?
   is_activated      Boolean         @default(true)
 
   user              Users?          @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  wa_sent_detail    WaSentDetails   @relation(fields: [wa_sent_detail_id], references: [id], onDelete: Cascade)
 
   created_at        DateTime        @default(now())
   updated_at        DateTime        @default(now()) @updatedAt
-
-  @@unique([wa_number, wa_sent_detail_id])
-}
-
-model EmailSentDetails {
-  id                    String            @id @default(uuid(7))
-  email_cred_username   String            @unique
-  email_cred_password   String
-  email_sender_name     String
-  email_sender_address  String            @unique
-  // Tambahkan field lainnya kalau perlu
-
-  report_platform_id    String            @unique
-
-  report_platform       ReportPlatforms   @relation(fields: [report_platform_id], references: [id], onDelete: Cascade)
-
-  created_at            DateTime          @default(now())
-  updated_at            DateTime          @default(now()) @updatedAt
-
-  receivers             EmailReceivers[]
 }
 
 model EmailReceivers {
   id                      String              @id @default(uuid(7))
   name                    String
   email                   String
-  email_sent_detail_id    String
   user_id                 String?
   is_activated            Boolean             @default(true)
 
   user                    Users?              @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  email_sent_detail       EmailSentDetails    @relation(fields: [email_sent_detail_id], references: [id], onDelete: Cascade)
 
   created_at              DateTime            @default(now())
   updated_at              DateTime            @default(now()) @updatedAt
-
-  @@unique([email, email_sent_detail_id])
-}
-
-model TelegramSentDetails {
-  id                   String                @id @default(uuid(7))
-  telegram_username    String
-  telegram_api_token   String
-  // Tambahkan field lainnya kalau perlu
-
-  report_platform_id   String                @unique
-
-  report_platform      ReportPlatforms       @relation(fields: [report_platform_id], references: [id], onDelete: Cascade)
-
-  created_at           DateTime              @default(now())
-  updated_at           DateTime              @default(now()) @updatedAt
-
-  receivers            TelegramReceivers[]
-}
-
-model TelegramReceivers {
-  id                        String                @id @default(uuid(7))
-  name                      String
-  telegram_chat_id          String
-  telegram_sent_detail_id   String
-  user_id                   String?
-  is_activated              Boolean               @default(true)
-
-  user                      Users?                @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  telegram_sent_detail      TelegramSentDetails   @relation(fields: [telegram_sent_detail_id], references: [id], onDelete: Cascade)
-
-  created_at                DateTime              @default(now())
-  updated_at                DateTime              @default(now()) @updatedAt
-
-  @@unique([telegram_chat_id, telegram_sent_detail_id])
 }

@@ -3,6 +3,7 @@ import {
   camerasSeed,
   edgeDevicesSeed,
   layoutSeed,
+  reportReceiversSeed,
   systemSettingsSeed,
   usersSeed,
 } from './seed';
@@ -13,6 +14,7 @@ async function main() {
   try {
     await systemSettingsSeed();
     await usersSeed();
+    await reportReceiversSeed();
     await edgeDevicesSeed();
     await camerasSeed();
     await layoutSeed();
