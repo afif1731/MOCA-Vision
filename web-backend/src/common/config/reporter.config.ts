@@ -5,7 +5,10 @@ export const ReporterConfig = {
     MAIL_PASSWORD: process.env.REPORTER_MAIL_PASSWORD!,
   },
   Whatsapp: {
-    CLIENT_ID: 'mocavis-wa-sender',
+    CLIENT_ID:
+      process.env.NODE_ENV === 'production'
+        ? 'mocavis-wa-sender-prod'
+        : 'mocavis-wa-sender',
   },
   Telegram: {},
 };
