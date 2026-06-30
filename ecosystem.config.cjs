@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'mocavis-be',
-      cwd: '~/MOCA-Vision/web-backend',
+      cwd: './web-backend',
       script: 'bun',
       args: 'start',
       max_memory_restart: '100M',
@@ -14,7 +14,7 @@ module.exports = {
     },
     {
       name: 'mocavis-fe',
-      cwd: '~/MOCA-Vision/web-frontend',
+      cwd: './web-frontend',
       script: 'bun',
       args: 'run preview:prod',
       max_memory_restart: '500M',
