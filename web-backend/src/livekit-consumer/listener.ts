@@ -205,10 +205,10 @@ export class LivekitListener {
     if (isViolent && !this.activeRecordings.has(payload.camera_id)) {
       if (
         recentRecording &&
-        recentRecording.created_at.getTime() + 60_000 < currentDate.getTime()
+        currentDate.getTime() - recentRecording.created_at.getTime() < 60_000
       ) {
         logger.info(
-          `💤 [LiveKit Listener] Violence Recording for camera ${payload.camera_id} is on 1 minute cooldown (${recentRecording.created_at.getTime() + 60_000}) (${currentDate.getTime()})`,
+          `💤 [LiveKit Listener] Violence Recording for camera ${payload.camera_id} is on 1 minute cooldown (${currentDate.getTime() - recentRecording.created_at.getTime()}ms remaining)`,
         );
 
         return;
@@ -287,10 +287,7 @@ export class LivekitListener {
       }
     }
 
-    // Gunakan 50 FPS secara konstan karena kamera LiveKit menangkap video di 50 FPS (300 frame = 6 detik).
-    // Jika kita menggunakan session.payload.fps (kecepatan inferensi model, misal 16 FPS),
-    // ffmpeg akan menarik 300 frame menjadi lambat (18 detik) dan menyebabkan frame error/corrupt.
-    const fps = 50;
+    const fps = 30;
 
     const ffmpeg = spawn('ffmpeg', [
       '-y',
