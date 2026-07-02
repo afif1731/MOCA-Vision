@@ -19,7 +19,7 @@ def get_temperature():
                     if key in temps and temps[key]:
                         return temps[key][0].current
                 # Fallback to the first available sensor
-                for name, entries in temps.items():
+                for _, entries in temps.items():
                     if entries:
                         return entries[0].current
     except Exception:
@@ -54,7 +54,7 @@ async def publish_device_status(room: Room, device_id: str):
         
         await room.local_participant.publish_data(
             payload_bytes,
-            reliable=False,
+            reliable=True,
             topic='device_status'
         )
     except Exception as e:
@@ -66,7 +66,7 @@ async def publish_violence_detection(detection_data: dict, room: Room):
 
         await room.local_participant.publish_data(
             payload_bytes,
-            reliable=False,
+            reliable=True,
             topic='violence_detection'
         )
     except Exception as e:

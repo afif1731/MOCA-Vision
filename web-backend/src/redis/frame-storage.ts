@@ -4,13 +4,29 @@ import { type Buffer } from 'node:buffer';
 
 export class FrameStorageService {
   private store = new Map<string, Buffer[]>();
-  private timers = new Map<string, NodeJS.Timeout>();
+  private lastUpdate = new Map<string, number>();
+
+  constructor() {
+    // Jalankan pembersihan setiap 10 detik untuk track yang kadaluarsa (> 60 detik)
+    // Ini jauh lebih ringan dari membuat 30 timer per detik
+    setInterval(() => this.runCleanup(), 10_000);
+  }
+
+  private runCleanup() {
+    const now = Date.now();
+
+    for (const [trackId, time] of this.lastUpdate.entries()) {
+      if (now - time > 60_000) {
+        this.clearTrack(trackId);
+      }
+    }
+  }
 
   /**
    * Menyimpan frame baru untuk suatu track.
    * - Menambahkan frame ke dalam list (penyimpanan baru jika track baru).
    * - Membatasi penyimpanan maksimal 100 frame terbaru.
-   * - Mengatur waktu kadaluarsa (TTL) menjadi 60 detik. Jika tidak ada frame baru selama 1 menit, otomatis dihapus.
+   * - Waktu kadaluarsa otomatis ditangani oleh cleanup interval.
    *
    * @param trackId Nama track (contoh: track_{camera_id})
    * @param frameData Data frame
@@ -30,17 +46,8 @@ export class FrameStorageService {
       frames.pop();
     }
 
-    // Reset TTL list menjadi 60 detik setiap ada frame baru masuk
-    if (this.timers.has(trackId)) {
-      clearTimeout(this.timers.get(trackId));
-    }
-
-    this.timers.set(
-      trackId,
-      setTimeout(() => {
-        this.clearTrack(trackId);
-      }, 60_000),
-    );
+    // Catat waktu frame terakhir masuk
+    this.lastUpdate.set(trackId, Date.now());
   }
 
   /**
@@ -60,11 +67,7 @@ export class FrameStorageService {
    */
   async clearTrack(trackId: string): Promise<void> {
     this.store.delete(trackId);
-
-    if (this.timers.has(trackId)) {
-      clearTimeout(this.timers.get(trackId));
-      this.timers.delete(trackId);
-    }
+    this.lastUpdate.delete(trackId);
   }
 }
 

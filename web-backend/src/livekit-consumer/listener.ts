@@ -63,7 +63,7 @@ export class LivekitListener {
 
       await this.room.connect(LiveKitConfig.URL, tokenString, {
         autoSubscribe: true,
-        dynacast: true,
+        dynacast: false,
       });
 
       logger.info(
@@ -99,8 +99,6 @@ export class LivekitListener {
                   const trackName = track.name!;
                   const cameraId = trackName.replace('track_', '');
 
-                  // Gunakan Buffer.allocUnsafe & set untuk memastikan DEEP COPY
-                  // sehingga tidak ada frame yang tertimpa jika SDK me-reuse memori buffer.
                   const buffer = Buffer.allocUnsafe(frame.data.length);
                   buffer.set(frame.data);
 
@@ -150,11 +148,18 @@ export class LivekitListener {
 
       this.room.on(
         RoomEvent.DataReceived,
-        (payload, _participant, _kind, _topic) => {
+        (payload, _participant, _kind, topic) => {
+          console.log(topic);
+
           try {
-            const dataString = Buffer.from(payload).toString('utf-8');
+            const dataString = new TextDecoder().decode(payload);
             const detection: ViolenceDetectionPayload = JSON.parse(dataString);
-            this.handleViolenceDetection(detection);
+
+            this.handleViolenceDetection(detection).catch(error => {
+              logger.error(
+                `❌ [LivekitListener] Error in handleViolenceDetection: ${error}`,
+              );
+            });
           } catch (error) {
             logger.error(
               `❌ [LivekitListener] Failed to parse data channel message: ${error}`,
@@ -217,16 +222,20 @@ export class LivekitListener {
       }
     }
 
-    const recentRecording = await prisma.detectedAnomalies.findFirst({
-      where: { camera_id: payload.camera_id },
-      select: { created_at: true },
-      orderBy: { created_at: 'desc' },
-    });
-    const currentDate = new Date(Date.now());
+    if (isViolent) logger.info('Violence Detected!');
+    else logger.info('No Violence Detected!');
 
     if (isViolent && !this.activeRecordings.has(payload.camera_id)) {
+      const recentRecording = await prisma.detectedAnomalies.findFirst({
+        where: { camera_id: payload.camera_id },
+        select: { created_at: true },
+        orderBy: { created_at: 'desc' },
+      });
+      const currentDate = new Date(Date.now());
+
       if (
         recentRecording &&
+        !force_recording &&
         currentDate.getTime() - recentRecording.created_at.getTime() < 60_000
       ) {
         logger.info(
