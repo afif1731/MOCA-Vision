@@ -3,7 +3,7 @@ import { validate as isValidUuid } from 'uuid';
 
 import { ErrorResponse, prisma } from '@/common';
 import { livekitListener } from '@/livekit-consumer/listener';
-import { paginate } from '@/utils';
+import { FileManager, paginate } from '@/utils';
 import { type DetectedAnomalies } from '~/generated/prisma/client';
 import {
   type DetectedAnomaliesOrderByWithRelationInput,
@@ -94,9 +94,11 @@ export abstract class ViolenceService {
   }
 
   static async deleteViolence(anomaly_id: string) {
-    await this.isViolenceExist(anomaly_id);
+    const anomaly = await this.isViolenceExist(anomaly_id);
 
     await prisma.detectedAnomalies.delete({ where: { id: anomaly_id } });
+
+    if (anomaly.video_path) await FileManager.remove(anomaly.video_path);
 
     return true;
   }
@@ -110,7 +112,7 @@ export abstract class ViolenceService {
   private static async isViolenceExist(anomaly_id: string) {
     const anomaly = await prisma.detectedAnomalies.findUnique({
       where: { id: anomaly_id },
-      select: { id: true },
+      select: { id: true, video_path: true },
     });
 
     if (!anomaly)

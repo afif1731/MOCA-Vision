@@ -182,7 +182,7 @@ export default function FootageDetailPage() {
                 Mark as Valid
               </Button>
             )}
-            {(footage.is_valid || footage.is_valid === undefined) && (
+            {(footage.is_valid || footage.is_valid === null) && (
               <Button onClick={() => handleUpdate(false)} variant="outline" colors="destructive">
                 Mark as Invalid
               </Button>

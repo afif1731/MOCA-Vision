@@ -10,6 +10,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable unicorn/text-encoding-identifier-case */
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable unicorn/prefer-at */
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -109,10 +110,26 @@ export class LivekitListener {
                     const session = this.activeRecordings.get(cameraId)!;
 
                     if (session.remaining > 0) {
-                      session.frames.push(buffer);
-                      session.width = frame.width;
-                      session.height = frame.height;
-                      session.remaining--;
+                      if (!session.targetSize) {
+                        session.targetSize = buffer.length;
+                      }
+
+                      if (
+                        !session.width &&
+                        buffer.length === session.targetSize
+                      ) {
+                        session.width = frame.width;
+                        session.height = frame.height;
+                      }
+
+                      if (buffer.length === session.targetSize) {
+                        session.frames.push(buffer);
+                        session.lastValidBuffer = buffer;
+                        session.remaining--;
+                      } else if (session.lastValidBuffer) {
+                        session.frames.push(session.lastValidBuffer);
+                        session.remaining--;
+                      }
 
                       if (session.remaining === 0) {
                         this.finishRecording(session);
@@ -228,13 +245,33 @@ export class LivekitListener {
       const previousFrames = await frameStorageService.getFrames(trackName);
       previousFrames.reverse();
 
+      const sanitizedFrames: Buffer[] = [];
+      const targetSize =
+        previousFrames.length > 0
+          ? previousFrames[previousFrames.length - 1].length
+          : undefined;
+      let lastValidBuffer: Buffer | undefined;
+
+      if (targetSize) {
+        for (const f of previousFrames) {
+          if (f.length === targetSize) {
+            sanitizedFrames.push(f);
+            lastValidBuffer = f;
+          } else if (lastValidBuffer) {
+            sanitizedFrames.push(lastValidBuffer);
+          }
+        }
+      }
+
       this.activeRecordings.set(payload.camera_id, {
         cameraId: payload.camera_id,
-        frames: previousFrames,
+        frames: sanitizedFrames,
         remaining: 200,
         payload: payload,
         highestConfidence,
         detectedLabel,
+        targetSize,
+        lastValidBuffer,
       });
     }
   }
@@ -306,6 +343,8 @@ export class LivekitListener {
       this.VIDEO_FPS.toString(),
       '-i',
       '-',
+      '-vf',
+      'scale=trunc(iw/2)*2:trunc(ih/2)*2',
       '-c:v',
       'libx264',
       '-preset',

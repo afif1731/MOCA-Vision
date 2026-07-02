@@ -6,6 +6,7 @@ import { CameraController } from './camera/camera.controller';
 import { EdgeDeviceController } from './edge-device/edge-device.controller';
 import { LayoutController } from './layout/layout.controller';
 import { LiveKitController } from './livekit/livekit.controller';
+import { ReportController } from './report/report.controller';
 import { SystemController } from './system/system.controller';
 import { UserController } from './user/user.controller';
 import { ViolenceController } from './violence-detection/violence.controller';
@@ -18,4 +19,5 @@ export const ApiRouter = new Elysia({ name: 'api-router' })
   .use(EdgeDeviceController)
   .use(LayoutController)
   .use(SystemController)
-  .use(ViolenceController);
+  .use(ViolenceController)
+  .use(ReportController);

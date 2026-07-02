@@ -36,4 +36,6 @@ export interface RecordingSession {
   payload: ViolenceDetectionPayload;
   highestConfidence: number;
   detectedLabel: string;
+  targetSize?: number;
+  lastValidBuffer?: Buffer;
 }
