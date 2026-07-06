@@ -62,15 +62,6 @@ export class LivekitListener {
       });
       const tokenString = await token.toJwt();
 
-      await this.room.connect(LiveKitConfig.URL, tokenString, {
-        autoSubscribe: true,
-        dynacast: false,
-      });
-
-      logger.info(
-        `✅ [LivekitListener] Connected to room: ${LiveKitConfig.ROOM_NAME}`,
-      );
-
       this.room.on(
         RoomEvent.TrackSubscribed,
         (track, _publication, participant) => {
@@ -167,6 +158,15 @@ export class LivekitListener {
             );
           }
         },
+      );
+
+      await this.room.connect(LiveKitConfig.URL, tokenString, {
+        autoSubscribe: true,
+        dynacast: false,
+      });
+
+      logger.info(
+        `✅ [LivekitListener] Connected to room: ${LiveKitConfig.ROOM_NAME}`,
       );
     } catch (error) {
       logger.error(`❌ [LivekitListener] Connection failed: ${error}`);
@@ -503,7 +503,7 @@ export class LivekitListener {
             videoStartDate,
           );
 
-          sleep(1000);
+          await sleep(1000);
         }
 
         logger.info(`💚 [WhatsappSender] Report Sended to Whatsapps`);
