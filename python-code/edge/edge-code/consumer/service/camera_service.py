@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 class CameraService:
     @staticmethod
     async def create(data: dict, app_context: dict):
-        camera_id = data.get('id')
+        camera_id = data.get('camera_id')
         source = data.get('source')
         source_type = data.get('source_type')
         rtsp_username = data.get('rtsp_username')
@@ -53,7 +53,7 @@ class CameraService:
 
     @staticmethod
     async def patch(data: dict, app_context: dict):
-        camera_id = data.get('id')
+        camera_id = data.get('camera_id')
         new_source = data.get('source')
         new_source_type = data.get('source_type')
         rtsp_username = data.get('rtsp_username')
@@ -116,7 +116,7 @@ class CameraService:
 
     @staticmethod
     async def delete(data: dict, app_context: dict):
-        camera_id = data.get('id')
+        camera_id = data.get('camera_id')
         active_tasks = app_context['active_tasks']
         cameras = app_context['cameras']
 

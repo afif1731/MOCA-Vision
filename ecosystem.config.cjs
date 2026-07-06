@@ -5,7 +5,7 @@ module.exports = {
       cwd: './web-backend',
       script: 'bun',
       args: 'start',
-      max_memory_restart: '100M',
+      max_memory_restart: '400M',
       cron_restart: '0 3 * * *', // Restart every 3 AM
       autorestart: true,
       watch: false,

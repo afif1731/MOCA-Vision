@@ -308,7 +308,7 @@ export abstract class CameraService {
         });
       } else {
         if (currentCamera.status === 'ONLINE') {
-          if (data.status === 'ONLINE') {
+          if (updatedCamera.status === 'ONLINE') {
             if (data.source || data.source_type) {
               await LiveKitPublisher.cameraPatch(currentCamera.edge_device_id, {
                 camera_id: updatedCamera.id,

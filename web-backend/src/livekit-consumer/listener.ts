@@ -58,6 +58,7 @@ export class LivekitListener {
         room: LiveKitConfig.ROOM_NAME,
         canPublish: true,
         canSubscribe: true,
+        hidden: true,
       });
       const tokenString = await token.toJwt();
 
@@ -149,6 +150,8 @@ export class LivekitListener {
       this.room.on(
         RoomEvent.DataReceived,
         (payload, _participant, _kind, topic) => {
+          if (topic !== 'violence_detection') return;
+
           console.log(topic);
 
           try {
