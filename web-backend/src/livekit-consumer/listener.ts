@@ -142,10 +142,11 @@ export class LivekitListener {
 
       this.room.on(
         RoomEvent.DataReceived,
-        (payload, _participant, _kind, topic) => {
+        (payload, participant, _kind, topic) => {
+          logger.info(
+            `📥 [DataReceived] fired | topic=${JSON.stringify(topic)} | from=${participant?.identity ?? 'server/undefined'} | bytes=${payload.length}`,
+          );
           if (topic !== 'violence_detection') return;
-
-          logger.info('Data received');
 
           try {
             const dataString = new TextDecoder().decode(payload);
