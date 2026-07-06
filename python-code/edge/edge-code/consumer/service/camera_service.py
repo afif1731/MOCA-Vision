@@ -13,7 +13,7 @@ class CameraService:
         source_type = data.get('source_type')
         rtsp_username = data.get('rtsp_username')
         rtsp_password = data.get('rtsp_password')
-        rtsp_ip = data.get('rtsp_ip')
+        rtsp_iv = data.get('rtsp_iv')
         rtsp_authtag = data.get('rtsp_authtag')
         
         active_tasks = app_context['active_tasks']
@@ -34,7 +34,7 @@ class CameraService:
             'source_type': source_type,
             'rtsp_username': rtsp_username,
             'rtsp_password': rtsp_password,
-            'rtsp_ip': rtsp_ip,
+            'rtsp_iv': rtsp_iv,
             'rtsp_authtag': rtsp_authtag
         }
         cameras.append(camera_data)
@@ -58,7 +58,7 @@ class CameraService:
         new_source_type = data.get('source_type')
         rtsp_username = data.get('rtsp_username')
         rtsp_password = data.get('rtsp_password')
-        rtsp_ip = data.get('rtsp_ip')
+        rtsp_iv = data.get('rtsp_iv')
         rtsp_authtag = data.get('rtsp_authtag')
         
         active_tasks = app_context['active_tasks']
@@ -87,7 +87,7 @@ class CameraService:
             camera_data['source_type'] = new_source_type
             camera_data['rtsp_username'] = rtsp_username
             camera_data['rtsp_password'] = rtsp_password
-            camera_data['rtsp_ip'] = rtsp_ip
+            camera_data['rtsp_iv'] = rtsp_iv
             camera_data['rtsp_authtag'] = rtsp_authtag
         else:
             camera_data = {
@@ -96,7 +96,7 @@ class CameraService:
                 'source_type': new_source_type,
                 'rtsp_username': rtsp_username,
                 'rtsp_password': rtsp_password,
-                'rtsp_ip': rtsp_ip,
+                'rtsp_iv': rtsp_iv,
                 'rtsp_authtag': rtsp_authtag
             }
             cameras.append(camera_data)

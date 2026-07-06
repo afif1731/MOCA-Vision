@@ -282,8 +282,6 @@ console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
 );
 
-// whatsappClient.initialize();
-
 livekitListener.connect().catch(error => {
   console.error('Failed to start LiveKit Listener on startup:', error);
 });
@@ -292,15 +290,11 @@ const gracefulShutdown = async (signal: string) => {
   console.log(`Received ${signal}. Starting graceful shutdown...`);
 
   try {
-    console.log('Destroying WhatsApp Client...');
-    // await whatsappClient.destroy();
-    console.log('WhatsApp Client destroyed.');
-
     console.log('Disconnecting LiveKit Listener...');
     await livekitListener.disconnect();
     console.log('LiveKit Listener disconnected.');
   } catch (error) {
-    console.error('Error destroying WhatsApp Client:', error);
+    console.error('Error disconnecting LiveKit', error);
   }
 
   try {

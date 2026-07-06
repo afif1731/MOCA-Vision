@@ -309,7 +309,12 @@ export abstract class CameraService {
       } else {
         if (currentCamera.status === 'ONLINE') {
           if (updatedCamera.status === 'ONLINE') {
-            if (data.source || data.source_type) {
+            if (
+              data.source ||
+              data.source_type ||
+              data.rtsp_username ||
+              data.rtsp_password
+            ) {
               await LiveKitPublisher.cameraPatch(currentCamera.edge_device_id, {
                 camera_id: updatedCamera.id,
                 source: updatedCamera.source,
@@ -353,9 +358,15 @@ export abstract class CameraService {
   }
 
   static async deleteCamera(camera_id: string) {
-    await this.isCameraExist(camera_id);
+    const camera = await this.isCameraExist(camera_id);
 
     await prisma.cameras.delete({ where: { id: camera_id } });
+
+    if (camera.edge_device_id) {
+      await LiveKitPublisher.cameraDelete(camera.edge_device_id, {
+        camera_id,
+      });
+    }
 
     return true;
   }

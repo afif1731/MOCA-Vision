@@ -51,6 +51,8 @@ package-lock.json
 dist
 server
 server.exe
+whatsapp_worker
+whatsapp_worker.exe
 /generated/
 uploads/
 .wwebjs_cache

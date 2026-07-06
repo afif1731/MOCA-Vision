@@ -1,6 +1,8 @@
-import { whatsappClient } from '@/common';
+import { WhatsappQueue } from './whatsapp.processor';
 
 export abstract class WhatsAppService {
+  private static whatsappQueue = new WhatsappQueue();
+
   static async sendViolenceDetection(
     name: string,
     camera_name: string,
@@ -29,8 +31,31 @@ export abstract class WhatsAppService {
         'id-ID',
       )}. Please check the footage at MOCA-Vision Dashboard`;
 
-    const chatId = `${wa_chat_id.split('@')[0]}${is_group ? '@g.us' : '@c.us'}`;
+    const chatId = this.resolveChatId(wa_chat_id, is_group);
 
-    await whatsappClient.sendMessage(chatId, message);
+    await this.whatsappQueue.createMessageQueue({
+      recepient: chatId,
+      message: message,
+    });
+  }
+
+  static async sendRawMessage(
+    wa_chat_id: string,
+    is_group: boolean,
+    message: string,
+  ) {
+    const chatId = this.resolveChatId(wa_chat_id, is_group);
+
+    await this.whatsappQueue.createMessageQueue({
+      recepient: chatId,
+      message: message,
+    });
+  }
+
+  private static resolveChatId(wa_chat_id: string, isGroup?: boolean): string {
+    if (wa_chat_id.endsWith('@c.us') || wa_chat_id.endsWith('@g.us'))
+      return wa_chat_id;
+
+    return isGroup ? `${wa_chat_id}@g.us` : `${wa_chat_id}@c.us`;
   }
 }
