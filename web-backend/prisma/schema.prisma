@@ -84,17 +84,18 @@ model SystemSettings {
 }
 
 model EdgeDevices {
-  id            String          @id @default(uuid(7))
-  name          String
-  slug          String          @unique
-  type          String
-  location      String
-  max_cameras   Int             @default(1)
-  status        DeviceStatus    @default(OFFLINE)
-  error_message Json?
+  id                    String          @id @default(uuid(7))
+  name                  String
+  slug                  String          @unique
+  type                  String
+  location              String
+  max_cameras           Int             @default(1)
+  is_inference_active   Boolean         @default(true)
+  status                DeviceStatus    @default(OFFLINE)
+  error_message         Json?
 
-  created_at    DateTime        @default(now())
-  updated_at    DateTime        @default(now()) @updatedAt
+  created_at            DateTime        @default(now())
+  updated_at            DateTime        @default(now()) @updatedAt
 
   cameras       Cameras[]
 }

@@ -8,6 +8,7 @@ export const CreateDeviceRequestSchema = t.Object({
   name: StringSchema.text,
   location: StringSchema.text,
   type: StringSchema.text,
+  is_inference_active: t.BooleanString({ default: false }),
   max_cameras: t.Integer({ default: 1 }),
 });
 

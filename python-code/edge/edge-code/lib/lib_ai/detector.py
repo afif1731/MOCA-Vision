@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 import tflite_runtime.interpreter as tflite
 
 def yolo_pose_extraction(yolo_interpreter: tflite.Interpreter, frame: np.ndarray, conf_thresh=0.25, iou_thresh=0.45, imgsz=None):
-    t0 = time.time()
+    # t0 = time.time()
     
     input_details = yolo_interpreter.get_input_details()[0]
     output_details = yolo_interpreter.get_output_details()[0]
@@ -77,9 +77,9 @@ def yolo_pose_extraction(yolo_interpreter: tflite.Interpreter, frame: np.ndarray
             
     yolo_interpreter.set_tensor(input_details['index'], input_data)
     
-    t1 = time.time()
+    # t1 = time.time()
     yolo_interpreter.invoke()
-    t2 = time.time()
+    # t2 = time.time()
     
     output_data = yolo_interpreter.get_tensor(output_details['index'])
     
@@ -183,9 +183,9 @@ def yolo_pose_extraction(yolo_interpreter: tflite.Interpreter, frame: np.ndarray
                     "relative_kpts": relative_kpts
                 })
 
-    t3 = time.time()
-    if np.random.rand() < 0.1:
-        logger.info(f"YOLO INTERNAL (ms) - Pre: {(t1-t0)*1000:.1f} | EdgeTPU: {(t2-t1)*1000:.1f} | Post: {(t3-t2)*1000:.1f}")
+    # t3 = time.time()
+    # if np.random.rand() < 0.1:
+    #     logger.info(f"YOLO INTERNAL (ms) - Pre: {(t1-t0)*1000:.1f} | EdgeTPU: {(t2-t1)*1000:.1f} | Post: {(t3-t2)*1000:.1f}")
 
     return people
 

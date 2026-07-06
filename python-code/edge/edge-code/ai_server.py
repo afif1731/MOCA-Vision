@@ -153,10 +153,10 @@ def handle_client(conn, addr):
         encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
         
         while cap.isOpened():
-            t_start = time.time()
+            # t_start = time.time()
             
             ret, frame = cap.read()
-            t_read = time.time()
+            # t_read = time.time()
             
             if not ret:
                 logger.warning(f"[{camera_id}] Failed to read frame from camera. Waiting...")
@@ -164,7 +164,7 @@ def handle_client(conn, addr):
                 continue
 
             frame = cv2.resize(frame, (FRAME_SIZE, FRAME_SIZE))
-            t_resize = time.time()
+            # t_resize = time.time()
             
             events = []
             if run_ai:
@@ -176,7 +176,7 @@ def handle_client(conn, addr):
                     iou_thresh=YOLO_IOU_THRESHOLD,
                     imgsz=YOLO_IMGSZ
                 )
-                t_yolo = time.time()
+                # t_yolo = time.time()
                 
                 # --- INDIVIDUAL TRACKING ---
                 all_pelvis = [p["pelvis"] for p in people]
@@ -275,10 +275,10 @@ def handle_client(conn, addr):
                         "confidence": round(current_conf, 2),
                         "skeletons": absolute_skeletons
                     })
-            else:
+            # else:
                 # Mock minimal elapsed times for logging
-                t_yolo = time.time()
-                t_gcn = time.time()
+                # t_yolo = time.time()
+                # t_gcn = time.time()
                 
             active_object_ids = set(tracked.values()) if run_ai else set()
             for obj_id in list(cluster_buffers.keys()):
@@ -288,8 +288,8 @@ def handle_client(conn, addr):
                     if obj_id in cluster_slot_assignment:
                         del cluster_slot_assignment[obj_id]
                     
-            if run_ai:
-                t_gcn = time.time()
+            # if run_ai:
+            #     t_gcn = time.time()
                     
             # Encode frame to JPEG
             ret, jpeg = cv2.imencode('.jpg', frame, encode_param)
@@ -305,10 +305,10 @@ def handle_client(conn, addr):
             header_json = struct.pack('>I', len(json_bytes))
             conn.sendall(header_json + json_bytes)
             
-            t_transmit = time.time()
+            # t_transmit = time.time()
             
-            if frame_count % 15 == 0:
-                logger.info(f"[{camera_id}] PROFILE (ms) - Camera: {(t_read-t_start)*1000:.1f} | Resize: {(t_resize-t_read)*1000:.1f} | YOLO: {(t_yolo-t_resize)*1000:.1f} | GNN+Tracker: {(t_gcn-t_yolo)*1000:.1f} | TX/Network: {(t_transmit-t_gcn)*1000:.1f}")
+            # if frame_count % 15 == 0:
+            #     logger.info(f"[{camera_id}] PROFILE (ms) - Camera: {(t_read-t_start)*1000:.1f} | Resize: {(t_resize-t_read)*1000:.1f} | YOLO: {(t_yolo-t_resize)*1000:.1f} | GNN+Tracker: {(t_gcn-t_yolo)*1000:.1f} | TX/Network: {(t_transmit-t_gcn)*1000:.1f}")
                 
             frame_count += 1
             

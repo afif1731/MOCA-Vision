@@ -152,8 +152,6 @@ export class LivekitListener {
         (payload, _participant, _kind, topic) => {
           if (topic !== 'violence_detection') return;
 
-          console.log(topic);
-
           try {
             const dataString = new TextDecoder().decode(payload);
             const detection: ViolenceDetectionPayload = JSON.parse(dataString);
@@ -225,9 +223,6 @@ export class LivekitListener {
       }
     }
 
-    if (isViolent) logger.info('Violence Detected!');
-    else logger.info('No Violence Detected!');
-
     if (isViolent && !this.activeRecordings.has(payload.camera_id)) {
       const recentRecording = await prisma.detectedAnomalies.findFirst({
         where: { camera_id: payload.camera_id },
@@ -241,7 +236,7 @@ export class LivekitListener {
         !force_recording &&
         currentDate.getTime() - recentRecording.created_at.getTime() < 60_000
       ) {
-        logger.info(
+        logger.debug(
           `💤 [LiveKit Listener] Violence Recording for camera ${payload.camera_id} is on 1 minute cooldown (${currentDate.getTime() - recentRecording.created_at.getTime()}ms remaining)`,
         );
 

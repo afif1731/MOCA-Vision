@@ -211,6 +211,7 @@ export abstract class EdgeDeviceService {
         location: data.location,
         status: 'OFFLINE',
         max_cameras: data.max_cameras,
+        is_inference_active: data.is_inference_active,
         type: data.type,
       },
       select: { id: true },
@@ -220,7 +221,7 @@ export abstract class EdgeDeviceService {
   }
 
   static async updateDevice(device_id: string, data: IUpdateDeviceRequest) {
-    await this.isDeviceExist(device_id);
+    const device = await this.isDeviceExist(device_id);
 
     if (data.name) {
       const newSlug = createSlug(data.name);
@@ -258,7 +259,7 @@ export abstract class EdgeDeviceService {
         'Error message required',
       );
 
-    await prisma.edgeDevices.update({
+    const updatedDevice = await prisma.edgeDevices.update({
       where: { id: device_id },
       data: {
         name: data.name,
@@ -266,10 +267,60 @@ export abstract class EdgeDeviceService {
         type: data.type,
         location: data.location,
         max_cameras: data.max_cameras,
+        is_inference_active: data.is_inference_active,
         status: data.status,
         error_message: errorObject,
       },
+      select: {
+        id: true,
+        status: true,
+        cameras: {
+          where: {
+            status: 'ONLINE',
+          },
+          select: {
+            id: true,
+            source: true,
+            source_type: true,
+            rtsp_username: true,
+            rtsp_password: true,
+            rtsp_iv: true,
+            rtsp_authtag: true,
+          },
+        },
+      },
     });
+
+    if (updatedDevice.status === 'ONLINE') {
+      if (device.status !== 'ONLINE') {
+        for (const camera of updatedDevice.cameras) {
+          await LiveKitPublisher.cameraCreate(device.id, {
+            camera_id: camera.id,
+            source: camera.source,
+            source_type: camera.source_type,
+            rtsp_username: camera.rtsp_username,
+            rtsp_password: camera.rtsp_password,
+            rtsp_iv: camera.rtsp_iv,
+            rtsp_authtag: camera.rtsp_authtag,
+          });
+        }
+      }
+
+      if (
+        typeof data.is_inference_active === 'boolean' &&
+        device.is_inference_active !== data.is_inference_active
+      ) {
+        await (data.is_inference_active
+          ? LiveKitPublisher.deviceAiActivate(device.id)
+          : LiveKitPublisher.deviceAiShutdown(device.id));
+      }
+    } else if (device.status) {
+      for (const camera of updatedDevice.cameras) {
+        await LiveKitPublisher.cameraDelete(device_id, {
+          camera_id: camera.id,
+        });
+      }
+    }
 
     return true;
   }
@@ -304,12 +355,12 @@ export abstract class EdgeDeviceService {
   private static async isDeviceExist(device_id: string) {
     const isDeviceExist = await prisma.edgeDevices.findUnique({
       where: { id: device_id },
-      select: { id: true },
+      select: { id: true, status: true, is_inference_active: true },
     });
 
     if (!isDeviceExist)
       throw new ErrorResponse(StatusCodes.NOT_FOUND, 'Device not found');
 
-    return true;
+    return isDeviceExist;
   }
 }
