@@ -48,8 +48,24 @@ function startWhatsappWorker(): void {
   logger.info('[WA-Worker] 💚 Worker is active, waiting for job...');
 }
 
+async function shutdown(signal: string) {
+  logger.info(`[WA-Worker] ${signal} received, shutdown gracefully...`);
+
+  try {
+    await worker?.close();
+    await whatsappClient.destroy();
+  } catch (error) {
+    logger.error(`[WA-Worker] Error during shutdown: ${error}`); //eslint-disable-line @typescript-eslint/restrict-template-expressions
+  } finally {
+    process.exit(0);
+  }
+}
+
 whatsappClient.on('ready', () => {
   startWhatsappWorker();
 });
 
 whatsappClient.initialize();
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));

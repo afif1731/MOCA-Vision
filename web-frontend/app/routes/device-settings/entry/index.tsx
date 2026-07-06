@@ -45,6 +45,8 @@ export default function CctvSettingsPage() {
           isPaginated: true,
         });
         setDevices(response.data);
+
+        await api.get('/edge-device/status');
       } catch (error) {
         handleApiResponseError(error);
         setIsError(true);

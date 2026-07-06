@@ -2,9 +2,11 @@ import { useDataChannel } from '@livekit/components-react';
 import { useState } from 'react';
 import { useLoaderData } from 'react-router';
 
+import { api } from '@/lib/axios';
 import { cn } from '@/lib/utils';
 
 import { Text } from '@/components/helper/text';
+import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
 import { deviceStatusMap, type IEdgeDeviceState, type IEdgeDeviceStatus } from '@/schemas/models';
@@ -30,23 +32,50 @@ export function DeviceStatus() {
     }
   });
 
-  return <DeviceStatusContent device_status={device?.status} device_state={deviceState} />;
+  return (
+    <DeviceStatusContent
+      device_status={device?.status}
+      device_state={deviceState}
+      device_id={device?.id}
+      is_inference_active={device?.is_inference_active}
+    />
+  );
 }
 
 export function DeviceStatusContent({
   device_status,
   device_state,
   device_error_message,
+  device_id,
+  is_inference_active,
 }: {
   device_status?: IEdgeDeviceStatus;
   device_state?: IEdgeDeviceState | null;
   device_error_message?: string;
+  device_id?: string;
+  is_inference_active?: boolean;
 }) {
   const realStatus: IEdgeDeviceStatus = device_state
     ? 'ONLINE'
     : device_status === 'DISABLED' || device_status === 'ERROR'
       ? device_status
       : 'NO_SIGNAL';
+
+  const [inferenceActive, setInferenceActive] = useState(is_inference_active ?? false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleToggleInference = async () => {
+    if (!device_id) return;
+    try {
+      setIsLoading(true);
+      await api.patch(`/edge-device/${device_id}`, { is_inference_active: !inferenceActive });
+      setInferenceActive(!inferenceActive);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div
@@ -105,6 +134,28 @@ export function DeviceStatusContent({
               : '-'}
           </Text>
         </div>
+      </div>
+
+      <div className="flex w-full items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <Text type="p" className="text-muted-foreground">
+            Inference
+          </Text>
+          <Text
+            type="btn"
+            className={cn('font-medium', inferenceActive ? 'text-green-600' : 'text-red-600')}
+          >
+            {inferenceActive ? 'Active' : 'Inactive'}
+          </Text>
+        </div>
+        <Button
+          variant="default"
+          colors={inferenceActive ? 'destructive' : 'default'}
+          disabled={isLoading || !device_id}
+          onClick={handleToggleInference}
+        >
+          {inferenceActive ? 'Deactivate' : 'Activate'}
+        </Button>
       </div>
 
       {device_status === 'ERROR' && (

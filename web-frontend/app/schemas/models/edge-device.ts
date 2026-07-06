@@ -51,6 +51,7 @@ export const DeviceDetailSchema = v.object({
   type: v.string(),
   location: v.string(),
   status: v.enum(DeviceStatus),
+  is_inference_active: v.boolean(),
   max_cameras: v.number(),
   cameras: v.array(v.object({ ...DeviceCameraSchema.entries })),
 });

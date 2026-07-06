@@ -226,8 +226,8 @@ export abstract class EdgeDeviceService {
     if (data.name) {
       const newSlug = createSlug(data.name);
 
-      const isSlugExist = await prisma.edgeDevices.findUnique({
-        where: { slug: newSlug },
+      const isSlugExist = await prisma.edgeDevices.findFirst({
+        where: { AND: [{ slug: newSlug }, { id: { not: device_id } }] },
         select: { name: true },
       });
 
@@ -348,6 +348,12 @@ export abstract class EdgeDeviceService {
         camera_id: camera.id,
       });
     }
+
+    return true;
+  }
+
+  static async sendDeviceStatusRequest() {
+    await LiveKitPublisher.deviceStatus();
 
     return true;
   }

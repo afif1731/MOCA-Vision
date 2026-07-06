@@ -30,9 +30,7 @@
     "sort:package": "sort-package-json",
     "start": "dotenv -e ../.env.production -- ./server",
     "start-deploy:dev": "dotenv -e ../.env.development -- ./server",
-    "start:dev": "dotenv -e ../.env.development -- bun run --watch src/main.ts",
-    "whatsapp:dev": "dotenv -e ../.env.development -- tsx src/whatsapp-worker.main.ts",
-    "whatsapp:prod": "dotenv -e ../.env.production -- tsx src/whatsapp-worker.main.ts"
+    "start:dev": "dotenv -e ../.env.development -- bun run --watch src/main.ts"
   },
   "lint-staged": {
     "package.json": "bun sort:package",

@@ -51,6 +51,14 @@ export const EdgeDeviceController = new Elysia({
           authPlugin: { allowed_roles: ['ADMIN'] },
         },
       )
+      .get('/status', async () => {
+        await EdgeDeviceService.sendDeviceStatusRequest();
+
+        return new SuccessResponse(
+          StatusCodes.OK,
+          'Device status request sent successfully',
+        );
+      })
       .get(
         '/:device_id',
         async ({ params: { device_id } }) => {

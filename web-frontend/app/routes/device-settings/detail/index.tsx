@@ -1,7 +1,8 @@
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { LiveKitRoom } from '@livekit/components-react';
+import { Trash2Icon } from 'lucide-react';
 import { useEffect } from 'react';
-import { Form, useRevalidator } from 'react-router';
+import { Form, useNavigate, useRevalidator } from 'react-router';
 import { RemixFormProvider, useRemixForm } from 'remix-hook-form';
 
 import useDialogStore from '@/hooks/store/use-dialog';
@@ -29,6 +30,7 @@ export function meta({}: Route.MetaArgs) {
 export async function clientLoader({ params: { device_id } }: Route.ClientLoaderArgs) {
   try {
     const response = await api.get<IDeviceDetail>(`/edge-device/${device_id}`);
+    await api.get('/edge-device/status');
 
     return { device: response.data };
   } catch (error) {
@@ -39,6 +41,7 @@ export async function clientLoader({ params: { device_id } }: Route.ClientLoader
 
 export default function DeviceDetailPage({ loaderData }: Route.ComponentProps) {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { token } = useLiveKitStore();
   const { open } = useDialogStore();
 
@@ -112,20 +115,29 @@ export default function DeviceDetailPage({ loaderData }: Route.ComponentProps) {
                   <DeviceStatus />
                 </LiveKitRoom>
               ) : (
-                <DeviceStatusContent />
+                <DeviceStatusContent
+                  device_status={device?.status}
+                  device_id={device?.id}
+                  is_inference_active={device?.is_inference_active}
+                />
               )}
               <DeviceCameraList cameras={device.cameras} />
 
               <div className="mt-8 flex flex-col items-center justify-end gap-4 sm:flex-row">
                 <Button
                   type="button"
+                  variant="default"
+                  colors="destructive"
+                  leftIcon={<Trash2Icon />}
+                  onClick={() => open('delete-device')}
+                >
+                  Delete Device
+                </Button>
+                <Button
+                  type="button"
                   variant="outline"
-                  className={cn(
-                    'w-full hover:text-white sm:w-auto',
-                    device.status === 'ONLINE'
-                      ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                  )}
+                  colors={device.status === 'ONLINE' ? 'destructive' : 'default'}
+                  className="w-full sm:w-auto"
                   onClick={() => open('toggle-device-status')}
                 >
                   Set {device.status === 'ONLINE' ? 'Offline' : 'Online'}
@@ -165,10 +177,30 @@ export default function DeviceDetailPage({ loaderData }: Route.ComponentProps) {
             description={`Are you sure you want to set this device to ${device.status === 'ONLINE' ? 'OFFLINE' : 'ONLINE'}?`}
             actionText="Confirm"
             onConfirm={async () => {
-              const newStatus = device.status === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
-              await api.patch(`/edge-device/${device.id}`, { status: newStatus });
-              toast.success(`Device status changed to ${newStatus}`);
-              revalidator.revalidate();
+              try {
+                const newStatus = device.status === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
+                await api.patch(`/edge-device/${device.id}`, { status: newStatus });
+                toast.success(`Device status changed to ${newStatus}`);
+                revalidator.revalidate();
+              } catch (error) {
+                handleApiResponseError(error);
+              }
+            }}
+          />
+
+          <ConfirmDialog
+            dialogId="delete-device"
+            title="Delete Edge Device"
+            description="Are you sure you want to delete this device? This action cannot be undone."
+            actionText="Delete"
+            onConfirm={async () => {
+              try {
+                await api.delete(`/edge-device/${device.id}`);
+                toast.success('Device deleted successfully');
+                navigate('/device-settings');
+              } catch (error) {
+                handleApiResponseError(error);
+              }
             }}
           />
         </div>
