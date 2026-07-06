@@ -64,7 +64,7 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
     options = rtc.TrackPublishOptions()
     options.source = rtc.TrackSource.SOURCE_CAMERA
 
-    await room.local_participant.publish_track(track, options)
+    publication = await room.local_participant.publish_track(track, options)
 
     logger.info(f"[{camera_id}] Connecting to AI Server at 127.0.0.1:5000...")
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -165,3 +165,8 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
     finally:
         logger.info(f"Shutting down camera client {camera_id}...")
         client.close()
+        try:
+            await room.local_participant.unpublish_track(publication.sid)
+            logger.info(f"[{camera_id}] Track unpublished.")
+        except Exception as e:
+            logger.error(f"[{camera_id}] Failed to unpublish track: {e}")
