@@ -18,16 +18,32 @@ export function EditCameraDetail() {
   const { register } = useFormContext();
   const sourceType = useWatch({ name: 'source_type' });
   const [sampleVideos, setSampleVideos] = useState<string[]>([]);
-  const [edgeDevices, setEdgeDevices] = useState<{ id: string; name: string }[]>([]);
+  const [edgeDevices, setEdgeDevices] = useState<{ id: string; name: string }[]>(() => {
+    if (camera?.edge_device_id && camera?.edge_device) {
+      return [{ id: camera.edge_device_id, name: camera.edge_device.name }];
+    }
+    return [];
+  });
 
   useEffect(() => {
     api
       .get<{ id: string; name: string }[]>('/edge-device/list-lite')
       .then((res) => {
-        setEdgeDevices(res.data);
+        let fetchedDevices = res.data;
+        if (
+          camera?.edge_device_id &&
+          camera?.edge_device &&
+          !fetchedDevices.find((d) => d.id === camera.edge_device_id)
+        ) {
+          fetchedDevices = [
+            { id: camera.edge_device_id, name: camera.edge_device.name },
+            ...fetchedDevices,
+          ];
+        }
+        setEdgeDevices(fetchedDevices);
       })
       .catch(console.error);
-  }, []);
+  }, [camera]);
 
   useEffect(() => {
     if (sourceType === 'STATIC_FILE') {
@@ -60,11 +76,6 @@ export function EditCameraDetail() {
               {...register('edge_device_id')}
             >
               <option value="">-- Unassigned --</option>
-              {camera?.edge_device_id &&
-                camera?.edge_device &&
-                !edgeDevices.find((d) => d.id === camera.edge_device_id) && (
-                  <option value={camera.edge_device_id}>{camera.edge_device.name}</option>
-                )}
               {edgeDevices.map((device) => (
                 <option key={device.id} value={device.id}>
                   {device.name}
