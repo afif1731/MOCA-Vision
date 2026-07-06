@@ -51,14 +51,35 @@ export const EdgeDeviceController = new Elysia({
           authPlugin: { allowed_roles: ['ADMIN'] },
         },
       )
-      .get('/status', async () => {
-        await EdgeDeviceService.sendDeviceStatusRequest();
+      .get(
+        '/status',
+        async () => {
+          await EdgeDeviceService.sendDeviceStatusRequest();
 
-        return new SuccessResponse(
-          StatusCodes.OK,
-          'Device status request sent successfully',
-        );
-      })
+          return new SuccessResponse(
+            StatusCodes.OK,
+            'Device status request sent successfully',
+          );
+        },
+        {
+          authPlugin: { allowed_roles: 'ADMIN' },
+        },
+      )
+      .get(
+        '/list-lite',
+        async () => {
+          const result = await EdgeDeviceService.getAllDeviceLite();
+
+          return new SuccessResponse(
+            StatusCodes.OK,
+            'Get device list lite successfully',
+            result,
+          );
+        },
+        {
+          authPlugin: { allowed_roles: 'ADMIN' },
+        },
+      )
       .get(
         '/:device_id',
         async ({ params: { device_id } }) => {

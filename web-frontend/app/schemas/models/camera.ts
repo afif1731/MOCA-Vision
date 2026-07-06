@@ -24,7 +24,7 @@ export const CameraItemSchema = v.object({
   source_type: CameraSourceSchema,
   status: v.enum(DeviceStatus),
   cv_threshold: v.number(),
-  device_id: v.nullable(v.string()),
+  edge_device_id: v.nullable(v.string()),
 });
 
 export const CameraDetailSchema = v.object({
@@ -37,13 +37,7 @@ export const CameraDetailSchema = v.object({
   error_message: v.nullable(v.string()),
   rtsp_username: v.nullable(v.string()),
   rtsp_password: v.nullable(v.string()),
-  device_id: v.nullable(v.string()),
-  device: v.nullable(
-    v.object({
-      id: v.string(),
-      name: v.string(),
-    })
-  ),
+  edge_device_id: v.nullable(v.string()),
 });
 
 const CreateCameraBaseSchema = v.object({
@@ -52,7 +46,7 @@ const CreateCameraBaseSchema = v.object({
   source_type: CameraSourceSchema,
   rtsp_username: v.optional(v.string()),
   rtsp_password: v.optional(v.string()),
-  device_id: v.optional(
+  edge_device_id: v.optional(
     v.union([v.pipe(v.string(), v.trim(), v.uuid('Invalid UUID')), v.literal('')])
   ),
 });
@@ -79,11 +73,9 @@ const EditCameraBaseSchema = v.object({
   source_type: CameraSourceSchema,
   rtsp_username: v.optional(v.string()),
   rtsp_password: v.optional(v.string()),
-  device_id: v.optional(
+  edge_device_id: v.optional(
     v.union([v.pipe(v.string(), v.trim(), v.uuid('Invalid UUID')), v.literal('')])
   ),
-  cv_threshold: v.number(),
-  error_message: v.optional(v.string()),
 });
 
 export const EditCameraSchema = v.pipe(

@@ -49,7 +49,7 @@ export default function CameraDetailPage({ loaderData }: Route.ComponentProps) {
         try {
           const payload = {
             ...data,
-            device_id: data.device_id || undefined,
+            edge_device_id: data.edge_device_id || null,
             rtsp_username: data.rtsp_username || undefined,
             rtsp_password: data.rtsp_password || undefined,
           };
@@ -74,9 +74,7 @@ export default function CameraDetailPage({ loaderData }: Route.ComponentProps) {
         source_type: camera.source_type ?? 'RTSP_LINK',
         rtsp_username: camera.rtsp_username ?? '',
         rtsp_password: camera.rtsp_password ?? '',
-        device_id: camera.device_id ?? '',
-        cv_threshold: camera.cv_threshold ?? 0.5,
-        error_message: camera.error_message ?? '',
+        edge_device_id: camera.edge_device_id ?? '',
       });
     }
   }, [reset, camera]);
@@ -137,9 +135,7 @@ export default function CameraDetailPage({ loaderData }: Route.ComponentProps) {
                         source_type: camera.source_type ?? 'RTSP_LINK',
                         rtsp_username: camera.rtsp_username ?? '',
                         rtsp_password: camera.rtsp_password ?? '',
-                        device_id: camera.device_id ?? '',
-                        cv_threshold: camera.cv_threshold ?? 0.5,
-                        error_message: camera.error_message ?? '',
+                        edge_device_id: camera.edge_device_id ?? '',
                       });
                     }}
                   >

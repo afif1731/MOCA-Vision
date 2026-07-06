@@ -14,6 +14,16 @@ export function EditCameraDetail() {
   const { register } = useFormContext();
   const sourceType = useWatch({ name: 'source_type' });
   const [sampleVideos, setSampleVideos] = useState<string[]>([]);
+  const [edgeDevices, setEdgeDevices] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    api
+      .get<{ id: string; name: string }[]>('/edge-device/list-lite')
+      .then((res) => {
+        setEdgeDevices(res.data);
+      })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (sourceType === 'STATIC_FILE') {
@@ -37,11 +47,22 @@ export function EditCameraDetail() {
       <div className="flex w-full flex-col gap-6">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <InputForm isRequired name="name" label="CCTV Name" placeholder="Input your CCTV name" />
-          <InputForm
-            name="device_id"
-            label="Device ID (Optional)"
-            placeholder="Input UUID for Edge Device"
-          />
+          <div className="flex flex-col justify-center gap-2">
+            <Text type="p" className="font-semibold text-teal-800">
+              Edge Device
+            </Text>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:font-medium file:text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              {...register('edge_device_id')}
+            >
+              <option value="">-- Unassigned --</option>
+              {edgeDevices.map((device) => (
+                <option key={device.id} value={device.id}>
+                  {device.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -96,6 +117,7 @@ export function EditCameraDetail() {
                 name="rtsp_username"
                 label="RTSP Username"
                 placeholder="Input RTSP Username"
+                autoComplete="off"
               />
 
               <InputForm
@@ -104,25 +126,10 @@ export function EditCameraDetail() {
                 label="RTSP Password"
                 placeholder="Input RTSP Password (Re-enter for security)"
                 type="password"
+                autoComplete="new-password"
               />
             </>
           )}
-
-          <InputForm
-            isRequired
-            type="number"
-            name="cv_threshold"
-            label="CV Threshold"
-            placeholder="e.g., 0.5"
-            inputProps={{ step: 0.1, min: 0, max: 1 }}
-          />
-
-          <InputForm
-            name="error_message"
-            label="Error Message"
-            placeholder="Error message if any"
-            isDisabled
-          />
         </div>
       </div>
     </div>

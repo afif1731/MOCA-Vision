@@ -27,13 +27,14 @@ export default function CreateCameraPage({}: Route.ComponentProps) {
     mode: 'onBlur',
     defaultValues: {
       source_type: 'RTSP_LINK',
+      edge_device_id: '',
     },
     submitHandlers: {
       onValid: async (data) => {
         try {
           const payload = {
             ...data,
-            device_id: data.device_id || undefined,
+            edge_device_id: data.edge_device_id || undefined,
             rtsp_username: data.rtsp_username || undefined,
             rtsp_password: data.rtsp_password || undefined,
           };

@@ -157,6 +157,7 @@ export abstract class CameraService {
       },
       select: {
         id: true,
+        edge_device_id: true,
         name: true,
         source_type: true,
         status: true,

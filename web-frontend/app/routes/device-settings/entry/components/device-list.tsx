@@ -148,7 +148,7 @@ function DeviceItem({ device, state }: { device: IEdgeDevice; state?: IEdgeDevic
             </Text>
           </DeviceStatusFrame>
 
-          {realStatus === 'ONLINE' && (
+          {state && (
             <>
               <DeviceStatusFrame>
                 <Text type="btn"> CPU: </Text>

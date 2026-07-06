@@ -101,6 +101,20 @@ export abstract class EdgeDeviceService {
     return devices;
   }
 
+  static async getAllDeviceLite() {
+    const devices = await prisma.edgeDevices.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: {
+        slug: 'asc',
+      },
+    });
+
+    return devices;
+  }
+
   static async getDeviceDetail(device_id: string) {
     const device = await prisma.edgeDevices.findFirst({
       where: {

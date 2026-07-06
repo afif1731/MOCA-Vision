@@ -59,8 +59,8 @@ function CameraItem({ camera }: { camera: ICameraItem }) {
           </Link>
           <div className="flex flex-row items-center justify-start gap-1 p-0">
             <Text type="btn" className={cn('font-semibold text-slate-500')}>
-              {camera.device_id
-                ? `Edge Device ID: ${camera.device_id.split('-')[0]}`
+              {camera.edge_device_id
+                ? `Edge Device: ${camera.edge_device_id.split('-')[0]}`
                 : 'Unassigned'}
             </Text>
           </div>
@@ -80,13 +80,6 @@ function CameraItem({ camera }: { camera: ICameraItem }) {
             <Text type="btn"> Source Type: </Text>
             <Text type="btn" className="font-semibold text-teal-800">
               {cameraSourceMap[camera.source_type] || camera.source_type}
-            </Text>
-          </DeviceStatusFrame>
-
-          <DeviceStatusFrame>
-            <Text type="btn"> CV Threshold: </Text>
-            <Text type="btn" className="font-semibold text-teal-800">
-              {camera.cv_threshold}
             </Text>
           </DeviceStatusFrame>
         </div>
