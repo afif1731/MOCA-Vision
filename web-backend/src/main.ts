@@ -20,7 +20,6 @@ import {
   LoggerConfig,
   prisma,
   SuccessResponse,
-  whatsappClient,
 } from './common';
 import { livekitListener } from './livekit-consumer/listener';
 import { systemCronjobs } from './utils';
@@ -283,7 +282,7 @@ console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
 );
 
-whatsappClient.initialize();
+// whatsappClient.initialize();
 
 livekitListener.connect().catch(error => {
   console.error('Failed to start LiveKit Listener on startup:', error);
@@ -294,7 +293,7 @@ const gracefulShutdown = async (signal: string) => {
 
   try {
     console.log('Destroying WhatsApp Client...');
-    await whatsappClient.destroy();
+    // await whatsappClient.destroy();
     console.log('WhatsApp Client destroyed.');
 
     console.log('Disconnecting LiveKit Listener...');
