@@ -59,9 +59,7 @@ function CameraItem({ camera }: { camera: ICameraItem }) {
           </Link>
           <div className="flex flex-row items-center justify-start gap-1 p-0">
             <Text type="btn" className={cn('font-semibold text-slate-500')}>
-              {camera.edge_device_id
-                ? `Edge Device: ${camera.edge_device_id.split('-')[0]}`
-                : 'Unassigned'}
+              {camera.edge_device ? `Edge Device: ${camera.edge_device.name}` : 'Unassigned'}
             </Text>
           </div>
         </div>

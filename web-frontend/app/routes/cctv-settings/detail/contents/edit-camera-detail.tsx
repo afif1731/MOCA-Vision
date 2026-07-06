@@ -1,6 +1,7 @@
 import { VideoIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
+import { useLoaderData } from 'react-router';
 
 import { api } from '@/lib/axios';
 import { cn } from '@/lib/utils';
@@ -10,7 +11,10 @@ import { Text } from '@/components/helper/text';
 
 import { cameraSourceMap } from '@/schemas/models';
 
+import type { clientLoader } from '../index';
+
 export function EditCameraDetail() {
+  const { camera } = useLoaderData<typeof clientLoader>();
   const { register } = useFormContext();
   const sourceType = useWatch({ name: 'source_type' });
   const [sampleVideos, setSampleVideos] = useState<string[]>([]);
@@ -56,6 +60,11 @@ export function EditCameraDetail() {
               {...register('edge_device_id')}
             >
               <option value="">-- Unassigned --</option>
+              {camera?.edge_device_id &&
+                camera?.edge_device &&
+                !edgeDevices.find((d) => d.id === camera.edge_device_id) && (
+                  <option value={camera.edge_device_id}>{camera.edge_device.name}</option>
+                )}
               {edgeDevices.map((device) => (
                 <option key={device.id} value={device.id}>
                   {device.name}
@@ -116,7 +125,7 @@ export function EditCameraDetail() {
                 isRequired
                 name="rtsp_username"
                 label="RTSP Username"
-                placeholder="Input RTSP Username"
+                placeholder="Input RTSP Username (Re-enter for security)"
                 autoComplete="off"
               />
 

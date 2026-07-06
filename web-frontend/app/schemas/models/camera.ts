@@ -25,6 +25,11 @@ export const CameraItemSchema = v.object({
   status: v.enum(DeviceStatus),
   cv_threshold: v.number(),
   edge_device_id: v.nullable(v.string()),
+  edge_device: v.nullable(
+    v.object({
+      name: v.string(),
+    })
+  ),
 });
 
 export const CameraDetailSchema = v.object({
@@ -38,6 +43,11 @@ export const CameraDetailSchema = v.object({
   rtsp_username: v.nullable(v.string()),
   rtsp_password: v.nullable(v.string()),
   edge_device_id: v.nullable(v.string()),
+  edge_device: v.nullable(
+    v.object({
+      name: v.string(),
+    })
+  ),
 });
 
 const CreateCameraBaseSchema = v.object({

@@ -54,7 +54,7 @@ export default function CreateCameraPage({}: Route.ComponentProps) {
   return (
     <div
       className={cn(
-        'block w-full bg-slate-100 px-8 py-8',
+        'flex w-full flex-col bg-slate-100 px-8 py-8',
         isMobile ? 'min-h-lvh' : 'h-screen max-h-screen overflow-y-auto'
       )}
     >
@@ -63,12 +63,12 @@ export default function CreateCameraPage({}: Route.ComponentProps) {
       <RemixFormProvider {...methods}>
         <Form
           id="create-camera"
-          className="flex min-h-screen w-full flex-col gap-y-3 pt-8 lg:gap-y-5"
+          className="flex w-full flex-1 flex-col gap-y-3 pt-8 lg:gap-y-5"
           onSubmit={handleSubmit}
         >
           <CreateCameraDetail />
 
-          <div className="mt-8 flex flex-col items-center justify-end gap-4 sm:flex-row">
+          <div className="mt-auto flex flex-col items-center justify-end gap-4 pt-8 sm:flex-row">
             <div className="flex h-fit w-full flex-row gap-4 sm:ml-auto sm:w-auto">
               <Button
                 type="button"
