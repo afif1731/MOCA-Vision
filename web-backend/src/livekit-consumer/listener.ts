@@ -145,6 +145,8 @@ export class LivekitListener {
         (payload, _participant, _kind, topic) => {
           if (topic !== 'violence_detection') return;
 
+          logger.info('Data received');
+
           try {
             const dataString = new TextDecoder().decode(payload);
             const detection: ViolenceDetectionPayload = JSON.parse(dataString);
