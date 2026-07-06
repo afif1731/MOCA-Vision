@@ -12,6 +12,7 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable unicorn/prefer-at */
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -50,7 +51,8 @@ export class LivekitListener {
         LiveKitConfig.API_KEY,
         LiveKitConfig.API_SECRET,
         {
-          identity: 'backend-livekit',
+          identity: `backend-livekit-${randomUUID()}`,
+          name: 'Backend Listener',
         },
       );
       token.addGrant({
@@ -170,6 +172,17 @@ export class LivekitListener {
       );
     } catch (error) {
       logger.error(`❌ [LivekitListener] Connection failed: ${error}`);
+    }
+  }
+
+  public async disconnect() {
+    try {
+      if (this.room) {
+        await this.room.disconnect();
+        logger.info('🛑 [LivekitListener] Disconnected from room gracefully');
+      }
+    } catch (error) {
+      logger.error(`❌ [LivekitListener] Error disconnecting: ${error}`);
     }
   }
 

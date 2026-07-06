@@ -296,6 +296,10 @@ const gracefulShutdown = async (signal: string) => {
     console.log('Destroying WhatsApp Client...');
     await whatsappClient.destroy();
     console.log('WhatsApp Client destroyed.');
+
+    console.log('Disconnecting LiveKit Listener...');
+    await livekitListener.disconnect();
+    console.log('LiveKit Listener disconnected.');
   } catch (error) {
     console.error('Error destroying WhatsApp Client:', error);
   }
