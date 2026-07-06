@@ -60,7 +60,7 @@ export class LivekitListener {
         room: LiveKitConfig.ROOM_NAME,
         canPublish: true,
         canSubscribe: true,
-        hidden: true,
+        hidden: false,
       });
       const tokenString = await token.toJwt();
 
