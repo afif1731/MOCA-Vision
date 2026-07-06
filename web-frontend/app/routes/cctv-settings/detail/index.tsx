@@ -44,6 +44,14 @@ export default function CameraDetailPage({ loaderData }: Route.ComponentProps) {
 
   const methods = useRemixForm<IEditCamera>({
     mode: 'onBlur',
+    defaultValues: {
+      name: camera?.name ?? '',
+      source: camera?.source ?? '',
+      source_type: camera?.source_type ?? 'RTSP_LINK',
+      rtsp_username: camera?.rtsp_username ?? '',
+      rtsp_password: camera?.rtsp_password ?? '',
+      edge_device_id: camera?.edge_device_id ?? '',
+    },
     submitHandlers: {
       onValid: async (data) => {
         try {
