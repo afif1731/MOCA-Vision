@@ -10,42 +10,42 @@ import TitleSection from '@/components/sections/title';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 
-import { CreateDeviceSchema, type ICreateDevice } from '@/schemas/models';
+import { CreateCameraSchema, type ICreateCamera } from '@/schemas/models';
 
 import type { Route } from './+types';
-import { CreateDeviceDetail } from './contents/create-device-detail';
+import { CreateCameraDetail } from './contents/create-camera-detail';
 
 export function meta({}: Route.MetaArgs) {
-  return generateMeta('Create Device', 'Create Edge Device');
+  return generateMeta('Create CCTV', 'Create CCTV Camera');
 }
 
-export default function CreateDevicePage({}: Route.ComponentProps) {
+export default function CreateCameraPage({}: Route.ComponentProps) {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
-  const methods = useRemixForm<ICreateDevice>({
+  const methods = useRemixForm<ICreateCamera>({
     mode: 'onBlur',
     defaultValues: {
-      max_cameras: '1',
-      is_inference_active: false,
+      source_type: 'RTSP_LINK',
     },
     submitHandlers: {
       onValid: async (data) => {
         try {
           const payload = {
             ...data,
-            id: data.id || undefined,
-            max_cameras: data.max_cameras ? Number.parseInt(data.max_cameras as string, 10) : 1,
+            device_id: data.device_id || undefined,
+            rtsp_username: data.rtsp_username || undefined,
+            rtsp_password: data.rtsp_password || undefined,
           };
-          await api.post('/edge-device', payload);
-          toast.success('Device created successfully');
-          navigate('/device-settings');
+          await api.post('/camera', payload);
+          toast.success('CCTV Camera created successfully');
+          navigate('/cctv-settings');
         } catch (error) {
           handleApiResponseError(error);
         }
       },
     },
-    resolver: valibotResolver(CreateDeviceSchema),
+    resolver: valibotResolver(CreateCameraSchema),
   });
 
   const { handleSubmit } = methods;
@@ -57,15 +57,15 @@ export default function CreateDevicePage({}: Route.ComponentProps) {
         isMobile ? 'min-h-lvh' : 'h-screen max-h-screen overflow-y-auto'
       )}
     >
-      <TitleSection title="Create Edge Device" backTo="/device-settings" />
+      <TitleSection title="Create CCTV Camera" backTo="/cctv-settings" />
 
       <RemixFormProvider {...methods}>
         <Form
-          id="create-device"
+          id="create-camera"
           className="flex min-h-screen w-full flex-col gap-y-3 pt-8 lg:gap-y-5"
           onSubmit={handleSubmit}
         >
-          <CreateDeviceDetail />
+          <CreateCameraDetail />
 
           <div className="mt-8 flex flex-col items-center justify-end gap-4 sm:flex-row">
             <div className="flex h-fit w-full flex-row gap-4 sm:ml-auto sm:w-auto">
@@ -73,7 +73,7 @@ export default function CreateDevicePage({}: Route.ComponentProps) {
                 type="button"
                 variant="outline"
                 colors="destructive"
-                onClick={() => navigate('/device-settings')}
+                onClick={() => navigate('/cctv-settings')}
               >
                 Cancel
               </Button>

@@ -138,6 +138,7 @@ export abstract class EdgeDeviceService {
       select: {
         id: true,
         is_inference_active: true,
+        status: true,
         cameras: {
           where: {
             status: 'ONLINE',
@@ -170,7 +171,7 @@ export abstract class EdgeDeviceService {
 
     return {
       is_inference_active: device.is_inference_active,
-      cameras: device.cameras,
+      cameras: device.status === 'ONLINE' ? device.cameras : [],
     };
   }
 

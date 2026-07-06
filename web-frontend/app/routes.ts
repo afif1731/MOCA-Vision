@@ -16,6 +16,11 @@ export default [
       route('create', 'routes/device-settings/create/index.tsx'),
       route(':device_id', 'routes/device-settings/detail/index.tsx'),
     ]),
+    ...prefix('cctv-settings', [
+      index('routes/cctv-settings/entry/index.tsx'),
+      route('create', 'routes/cctv-settings/create/index.tsx'),
+      route(':camera_id', 'routes/cctv-settings/detail/index.tsx'),
+    ]),
     ...prefix('footage-log', [
       index('routes/footage-log/entry/index.tsx'),
       route(':anomaly_id', 'routes/footage-log/detail/index.tsx'),

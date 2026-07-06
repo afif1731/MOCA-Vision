@@ -56,7 +56,7 @@ export function DeviceStatusContent({
   is_inference_active?: boolean;
 }) {
   const realStatus: IEdgeDeviceStatus = device_state
-    ? 'ONLINE'
+    ? device_status || 'OFFLINE'
     : device_status === 'DISABLED' || device_status === 'ERROR'
       ? device_status
       : 'NO_SIGNAL';

@@ -21,7 +21,7 @@ export function CreateDeviceDetail() {
   return (
     <div
       className={cn(
-        'flex w-full flex-col items-center gap-8 rounded-md border border-teal-600 bg-teal-50 p-4 sm:p-8 md:flex-row'
+        'flex h-full w-full flex-col items-center gap-8 rounded-md border border-teal-600 bg-teal-50 p-4 sm:p-8 md:flex-row'
       )}
     >
       <DeviceImage />

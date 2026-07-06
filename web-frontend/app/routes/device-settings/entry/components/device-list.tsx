@@ -97,7 +97,7 @@ export function UnregisteredEdgeDeviceList({ devices }: { devices?: IEdgeDeviceS
 
 function DeviceItem({ device, state }: { device: IEdgeDevice; state?: IEdgeDeviceState }) {
   const realStatus: IEdgeDeviceStatus = state
-    ? 'ONLINE'
+    ? device.status
     : device.status !== 'ONLINE'
       ? device.status
       : 'NO_SIGNAL';

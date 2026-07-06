@@ -59,11 +59,11 @@ def device_on_data_received(dp: DataPacket, device_id: str, app_context: dict):
             asyncio.create_task(route_backend_request(payload, app_context))
 
         elif topic == 'frontend_request_device_status':
-            logger.info("Frontend request device status received")
             asyncio.create_task(
                 publish_device_status(
                     room=app_context['room'],
-                    device_id=device_id
+                    device_id=device_id,
+                    frontend_request=True
                 )
             )
 

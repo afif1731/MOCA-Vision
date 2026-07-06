@@ -1,7 +1,7 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: any required for now
 import { PlayIcon, Trash2Icon, VideoIcon } from 'lucide-react';
 import { useState } from 'react';
-import { useLoaderData, useRevalidator } from 'react-router';
+import { Link, useLoaderData, useRevalidator } from 'react-router';
 
 import useDialogStore from '@/hooks/store/use-dialog';
 import { api } from '@/lib/axios';
@@ -80,9 +80,11 @@ function DeviceCamera({ camera, revalidator }: { camera: IDeviceCamera; revalida
       <VideoIcon size={36} className="stroke-3 text-black" />
 
       <div className="flex h-full w-full flex-col justify-between">
-        <Text type="p" className="font-semibold text-red-500">
-          {camera.name}
-        </Text>
+        <Link to={`/cctv-settings/${camera.id}`}>
+          <Text type="p" className="font-semibold text-red-500">
+            {camera.name}
+          </Text>
+        </Link>
 
         <DeviceStatusFrame>
           <DeviceStatusMap status={camera.status} />

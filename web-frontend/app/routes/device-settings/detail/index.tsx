@@ -136,7 +136,7 @@ export default function DeviceDetailPage({ loaderData }: Route.ComponentProps) {
                 <Button
                   type="button"
                   variant="outline"
-                  colors={device.status === 'ONLINE' ? 'destructive' : 'default'}
+                  colors={device.status === 'ONLINE' ? 'destructive' : 'teal-800'}
                   className="w-full sm:w-auto"
                   onClick={() => open('toggle-device-status')}
                 >
