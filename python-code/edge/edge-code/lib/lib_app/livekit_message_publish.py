@@ -34,7 +34,10 @@ def get_temperature():
     
     return temp
 
-async def publish_device_status(room: Room, device_id: str):
+async def publish_device_status(room: Room, device_id: str, frontend_request=False):
+    if frontend_request:
+        await asyncio.sleep(2)
+
     try:
         cpu = psutil.cpu_percent(interval=None)
         mem = psutil.virtual_memory()

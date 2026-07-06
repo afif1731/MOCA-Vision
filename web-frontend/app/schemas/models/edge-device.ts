@@ -63,8 +63,18 @@ export const EditDeviceSchema = v.object({
   max_cameras: v.pipe(v.string(), v.trim(), v.nonEmpty('Device max cameras required')),
 });
 
+export const CreateDeviceSchema = v.object({
+  id: v.optional(v.union([v.pipe(v.string(), v.trim(), v.uuid('Invalid UUID')), v.literal('')])),
+  name: v.pipe(v.string(), v.trim(), v.nonEmpty('Device name required')),
+  type: v.pipe(v.string(), v.trim(), v.nonEmpty('Device type required')),
+  location: v.pipe(v.string(), v.trim(), v.nonEmpty('Device location required')),
+  max_cameras: v.pipe(v.string(), v.trim(), v.nonEmpty('Device max cameras required')),
+  is_inference_active: v.boolean(),
+});
+
 export type IDeviceCamera = v.InferInput<typeof DeviceCameraSchema>;
 export type IDeviceDetail = v.InferInput<typeof DeviceDetailSchema>;
 export type IEdgeDeviceStatus = v.InferInput<typeof EdgeDeviceStatusSchema>;
 export type IEdgeDeviceState = v.InferInput<typeof EdgeDeviceStateSchema>;
 export type IEdgeDevice = v.InferInput<typeof EdgeDeviceSchema>;
+export type ICreateDevice = v.InferInput<typeof CreateDeviceSchema>;
