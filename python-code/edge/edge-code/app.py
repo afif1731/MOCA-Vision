@@ -121,7 +121,7 @@ async def main():
             backend_url=BACKEND_URL
         )
 
-        fetch_cameras = fetched_cameras_data.get("cameras", [])
+        fetched_cameras = fetched_cameras_data.get("cameras", [])
         is_inference_active = fetched_cameras_data.get("is_inference_active", False)
 
         if is_inference_active:
