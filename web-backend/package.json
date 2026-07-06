@@ -5,7 +5,6 @@
   "main": "src/main.ts",
   "scripts": {
     "build": "bun build src/main.ts --target bun --outdir ./dist",
-    "build-wa:binary:prod": "dotenv -e ../.env.production -- bun build --compile --target bun --outfile whatsapp_worker ./src/whatsapp-worker.main.ts --external consolidate --external @aws-sdk/client-s3",
     "build:binary": "bun build --compile --target bun --outfile server ./src/main.ts --external consolidate --external @aws-sdk/client-s3",
     "build:binary:prod": "dotenv -e ../.env.production -- bun build:binary",
     "db:dev": "dotenv -e ../.env.development -- bun migrate:dev && bun seed:dev",
@@ -32,8 +31,8 @@
     "start": "dotenv -e ../.env.production -- ./server",
     "start-deploy:dev": "dotenv -e ../.env.development -- ./server",
     "start:dev": "dotenv -e ../.env.development -- bun run --watch src/main.ts",
-    "whatsapp:dev": "dotenv -e ../.env.development -- bun src/whatsapp-worker.main.ts",
-    "whatsapp:prod": "dotenv -e ../.env.production -- ./whatsapp_worker"
+    "whatsapp:dev": "dotenv -e ../.env.development -- tsx src/whatsapp-worker.main.ts",
+    "whatsapp:prod": "dotenv -e ../.env.production -- tsx src/whatsapp-worker.main.ts"
   },
   "lint-staged": {
     "package.json": "bun sort:package",
@@ -94,7 +93,8 @@
     "lint-staged": "^16.1.2",
     "prettier": "^3.2.5",
     "prisma": "^7.4.2",
-    "sort-package-json": "^3.4.0"
+    "sort-package-json": "^3.4.0",
+    "tsx": "^4.23.0"
   },
   "peerDependencies": {
     "typescript": "^5"
