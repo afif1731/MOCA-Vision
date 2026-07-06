@@ -98,6 +98,7 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
     await asyncio.to_thread(client.sendall, header + req_bytes)
     
     prev_time = time.time()
+    last_publish_time = 0.0
     
     try:
         while True:
@@ -139,7 +140,16 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
                 "fps": round(fps, 1),
                 "events": events
             }
-            await publish_violence_detection(detection_data, room)
+            
+            should_publish = True
+            if not config.get('run_ai', True):
+                if current_time - last_publish_time < 5.0:
+                    should_publish = False
+                else:
+                    last_publish_time = current_time
+            
+            if should_publish:
+                await publish_violence_detection(detection_data, room)
             
             # --- PUBLISH FRAME KE LIVEKIT ---
             # Decode JPEG kembali ke format OpenCV Matrix (BGR)
