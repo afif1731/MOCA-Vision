@@ -57,7 +57,8 @@ CONFIG = {
     "M": M,
     "YOLO_FILE": YOLO_FILE,
     "GNN_BACKBONE_FILE": GNN_BACKBONE_FILE,
-    "GNN_HEAD_FILE": GNN_HEAD_FILE
+    "GNN_HEAD_FILE": GNN_HEAD_FILE,
+    "run_ai": True
 }
 
 async def main():
@@ -114,11 +115,19 @@ async def main():
     
     fetched_cameras = None
     while fetched_cameras is None and not shutdown_event.is_set():
-        fetched_cameras = await fetch_cameras(
+        fetched_cameras_data = await fetch_cameras(
             device_id=DEVICE_ID,
             device_secret=DEVICE_SECRET,
             backend_url=BACKEND_URL
         )
+
+        fetch_cameras = fetched_cameras_data.get("cameras", [])
+        is_inference_active = fetched_cameras_data.get("is_inference_active", False)
+
+        if is_inference_active:
+            CONFIG["run_ai"] = True
+        else:
+            CONFIG["run_ai"] = False
 
         if fetched_cameras is None:
             logger.error("Failed to fetch camera configurations. Retrying in 10 seconds...")

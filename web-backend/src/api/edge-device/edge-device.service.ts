@@ -137,6 +137,7 @@ export abstract class EdgeDeviceService {
       where: { id: device_id },
       select: {
         id: true,
+        is_inference_active: true,
         cameras: {
           where: {
             status: 'ONLINE',
@@ -167,7 +168,10 @@ export abstract class EdgeDeviceService {
     if (signatureKey !== signature)
       throw new ErrorResponse(StatusCodes.UNAUTHORIZED, 'Invalid signature');
 
-    return device.cameras;
+    return {
+      is_inference_active: device.is_inference_active,
+      cameras: device.cameras,
+    };
   }
 
   static async createDevice(data: ICreateDeviceRequest) {

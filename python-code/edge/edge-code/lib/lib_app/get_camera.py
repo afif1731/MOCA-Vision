@@ -30,7 +30,7 @@ async def fetch_cameras(device_id: str, device_secret: str, backend_url: str):
                 if response.status == 200:
                     result = await response.json(content_type=None)
                     # Expected data format: {data: [{id: string, source: string, source_type: string}]}
-                    return result.get("data", [])
+                    return result.get("data", {'is_inference_active': False, 'cameras': []})
                 else:
                     error_msg = await response.text()
                     logger.error(f"Failed to fetch camera list (Status {response.status}): {error_msg}")
