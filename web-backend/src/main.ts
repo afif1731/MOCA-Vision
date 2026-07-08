@@ -9,6 +9,7 @@ import { mkdir } from 'node:fs/promises';
 
 import { logger } from '@bogeychan/elysia-logger';
 import cors from '@elysiajs/cors';
+import { dispose } from '@livekit/rtc-node';
 import { env } from '@yolk-oss/elysia-env';
 import { Elysia, t } from 'elysia';
 import { StatusCodes } from 'http-status-codes';
@@ -286,27 +287,38 @@ livekitListener.connect().catch(error => {
   console.error('Failed to start LiveKit Listener on startup:', error);
 });
 
+let isShuttingDown = false;
+
 const gracefulShutdown = async (signal: string) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
   console.log(`Received ${signal}. Starting graceful shutdown...`);
+
+  const forceExit = setTimeout(() => {
+    console.error('Graceful shutdown timeout, forcing exit.');
+    process.exit(1);
+  }, 7000);
+  forceExit.unref();
 
   try {
     console.log('Disconnecting LiveKit Listener...');
     await livekitListener.disconnect();
+    await dispose();
     console.log('LiveKit Listener disconnected.');
   } catch (error) {
     console.error('Error disconnecting LiveKit', error);
   }
 
   try {
-    console.log('Stopping Elysia server...');
     await app.stop();
-    console.log('Elysia server stopped.');
   } catch (error) {
     console.error('Error stopping server:', error);
   }
 
+  clearTimeout(forceExit);
   process.exit(0);
 };
 
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.once('SIGINT', () => gracefulShutdown('SIGINT'));
+process.once('SIGTERM', () => gracefulShutdown('SIGTERM'));

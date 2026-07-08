@@ -51,6 +51,7 @@ def device_on_data_received(dp: DataPacket, device_id: str, app_context: dict):
     
     try:
         if topic == f'backend_request_{device_id}' and data is not None:
+            logger.info(f"receiving backend request device status")
             if isinstance(data, bytes):
                 payload_str = data.decode('utf-8')
             else:
@@ -59,6 +60,7 @@ def device_on_data_received(dp: DataPacket, device_id: str, app_context: dict):
             asyncio.create_task(route_backend_request(payload, app_context))
 
         elif topic == 'frontend_request_device_status':
+            logger.info(f"receiving frontend request device status")
             asyncio.create_task(
                 publish_device_status(
                     room=app_context['room'],

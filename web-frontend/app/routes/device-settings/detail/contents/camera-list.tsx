@@ -81,7 +81,15 @@ function DeviceCamera({ camera, revalidator }: { camera: IDeviceCamera; revalida
 
       <div className="flex h-full w-full flex-col justify-between">
         <Link to={`/cctv-settings/${camera.id}`}>
-          <Text type="p" className="font-semibold text-red-500">
+          <Text
+            type="p"
+            className={cn(
+              'font-semibold hover:underline',
+              camera.status === 'ONLINE'
+                ? 'text-red-500 hover:text-red-600'
+                : 'text-red-300 hover:text-red-400'
+            )}
+          >
             {camera.name}
           </Text>
         </Link>

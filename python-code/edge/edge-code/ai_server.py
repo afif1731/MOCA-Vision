@@ -1,7 +1,4 @@
 import os
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay"
-os.environ["OPENCV_LOG_LEVEL"] = "FATAL"
-os.environ["OPENCV_FFMPEG_LOGLEVEL"] = "-8"
 import cv2
 import time
 import json
@@ -16,6 +13,10 @@ import tflite_runtime.interpreter as tflite
 from lib.lib_ai.detector import yolo_pose_extraction, gnn_classification
 from lib.lib_ai.crowd_cluster import CentroidTracker, spatial_clustering
 from lib.lib_ai.camera_stream import CameraStream
+
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay"
+os.environ["OPENCV_LOG_LEVEL"] = "FATAL"
+os.environ["OPENCV_FFMPEG_LOGLEVEL"] = "-8"
 
 logging.basicConfig(
     level=logging.INFO,

@@ -1,12 +1,5 @@
 import os
-# --- C++ SEGFAULT DEBUGGING ---
-os.environ['GLOG_v'] = '2'
-os.environ['GLOG_minloglevel'] = '0'
-
 import faulthandler
-faulthandler.enable()
-# ------------------------------
-
 import asyncio
 import logging
 import signal
@@ -21,6 +14,11 @@ from lib.lib_app.livekit_message_publish import device_status_loop
 from lib.lib_app.livekit_access_token import fetch_access_token, token_renewal_loop
 
 from consumer.routes import device_on_data_received
+
+os.environ['GLOG_v'] = '2'
+os.environ['GLOG_minloglevel'] = '0'
+
+faulthandler.enable()
 
 logging.basicConfig(
     level=logging.INFO,
