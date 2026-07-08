@@ -74,7 +74,7 @@ function WaItem({ receiver }: { receiver: IWhatsappReceiverItem }) {
             </Text>
           </Link>
           <Text type="p" className="text-slate-500">
-            {receiver.wa_chat_id} {receiver.is_group ? '(Group)' : ''}
+            {receiver.wa_chat_id}
           </Text>
         </div>
       </div>

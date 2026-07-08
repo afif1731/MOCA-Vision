@@ -234,3 +234,8 @@ button {
 button:focus {
   outline: none;
 }
+
+input[type="checkbox"] {
+  color-scheme: light;
+  background-color: #ffffff;
+}
