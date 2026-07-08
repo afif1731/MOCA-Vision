@@ -29,7 +29,7 @@
     "seed:dev": "dotenv -e ../.env.development -- bun ./prisma/seeder/seeder.ts",
     "seed:prod": "dotenv -e ../.env.production -- bun ./prisma/seeder/seeder.ts",
     "sort:package": "sort-package-json",
-    "start": "bun --env-file=.env.production ./src/main.ts",
+    "start": "bun --env-file=../.env.production ./src/main.ts",
     "start:binary": "dotenv -e ../.env.production -- ./server",
     "start:binary:dev": "dotenv -e ../.env.development -- ./server",
     "start:dev": "dotenv -e ../.env.development -- bun run --watch src/main.ts"
