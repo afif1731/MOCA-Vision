@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
     preview: {
-      port: Number.parseInt(env.FRONTEND_PORT, 10) || 3000,
+      port: Number.parseInt(env.PORT, 10) || 3000,
       strictPort: true,
     },
   };
