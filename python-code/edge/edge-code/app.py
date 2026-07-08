@@ -63,134 +63,145 @@ async def main():
     global CAMERAS
     
     shutdown_event = asyncio.Event()
-
+    room: Room | None = None
+    active_tasks: dict = {}
+    background_tasks: list[asyncio.Task] = []
+    
     def handle_shutdown():
         logger.info("Received shutdown signal, shutting down...")
         shutdown_event.set()
 
     # Register signal handlers for graceful shutdown (Windows relies on Ctrl+C but works with SIGTERM/SIGINT if sent)
+    loop = asyncio.get_running_loop()
     for sig in ('SIGINT', 'SIGTERM'):
         try:
-            loop = asyncio.get_running_loop()
             loop.add_signal_handler(getattr(signal, sig), handle_shutdown)
         except NotImplementedError:
             pass
 
-    logger.info(f"Requesting LiveKit Token from {BACKEND_URL}...")
-    token: str | None = None
-    while not token and not shutdown_event.is_set():
-        token = await fetch_access_token(
-            device_id=DEVICE_ID,
-            device_secret=DEVICE_SECRET,
-            backend_url=BACKEND_URL
-        )
-        if not token:
-            logger.error("Failed to retrieve access token from backend. Retrying in 10 seconds...")
-            try:
-                await asyncio.wait_for(shutdown_event.wait(), timeout=10.0)
-            except asyncio.TimeoutError:
-                pass
-
-    if shutdown_event.is_set():
-        return
-
-    logger.info(f"Connecting to LiveKit Server {LIVEKIT_URL}...")
-    room = Room()
-    await room.connect(LIVEKIT_URL, str(token))
-    logger.info("Connected to WebRTC Room!")
-
-    # Start token renewal background task
-    token_task = asyncio.create_task(token_renewal_loop(
-        device_id=DEVICE_ID,
-        device_secret=DEVICE_SECRET,
-        backend_url=BACKEND_URL
-    ))
-
-    # Start device status telemetry loop
-    status_task = asyncio.create_task(device_status_loop(room, DEVICE_ID))
-
-    logger.info("Fetching camera configurations...")
-    
-    fetched_cameras = None
-    while fetched_cameras is None and not shutdown_event.is_set():
-        fetched_cameras_data = await fetch_cameras(
-            device_id=DEVICE_ID,
-            device_secret=DEVICE_SECRET,
-            backend_url=BACKEND_URL
-        )
-
-        fetched_cameras = fetched_cameras_data.get("cameras", [])
-        is_inference_active = fetched_cameras_data.get("is_inference_active", False)
-
-        if is_inference_active:
-            CONFIG["run_ai"] = True
-        else:
-            CONFIG["run_ai"] = False
-
-        if fetched_cameras is None:
-            logger.error("Failed to fetch camera configurations. Retrying in 10 seconds...")
-            try:
-                await asyncio.wait_for(shutdown_event.wait(), timeout=10.0)
-            except asyncio.TimeoutError:
-                pass
-    
-    if shutdown_event.is_set():
-        await room.disconnect()
-        return
-
-    CAMERAS = fetched_cameras if fetched_cameras else []
-
-    active_tasks = {}
-    app_context = {
-        'active_tasks': active_tasks,
-        'cameras': CAMERAS,
-        'room': room,
-        'config': CONFIG,
-        'backend_url': BACKEND_URL,
-        'device_secret': DEVICE_SECRET
-    }
-
-    @room.on("data_received")
-    def on_data_received(dp: rtc.DataPacket):
-        device_on_data_received(
-            dp=dp,
-            device_id=DEVICE_ID,
-            app_context=app_context
-        )
-
-    for camera in CAMERAS:
-        logger.info(f"Setting up camera process for ID: {camera['id']}")
-
-        task = asyncio.create_task(
-            run_camera_process(
-                camera=camera,
-                room=room,
-                config=CONFIG,
-                backend_url=BACKEND_URL,
-                device_secret=DEVICE_SECRET
+    try:
+        logger.info(f"Requesting LiveKit Token from {BACKEND_URL}...")
+        token: str | None = None
+        while not token and not shutdown_event.is_set():
+            token = await fetch_access_token(
+                device_id=DEVICE_ID,
+                device_secret=DEVICE_SECRET,
+                backend_url=BACKEND_URL
             )
-        )
-        active_tasks[camera['id']] = task
+            if not token:
+                logger.error("Failed to retrieve access token from backend. Retrying in 10 seconds...")
+                try:
+                    await asyncio.wait_for(shutdown_event.wait(), timeout=10.0)
+                except asyncio.TimeoutError:
+                    pass
 
-    if not active_tasks:
-        logger.info("No cameras configured. Edge Device running in idle mode.")
+        if shutdown_event.is_set():
+            return
 
-    await shutdown_event.wait()
+        logger.info(f"Connecting to LiveKit Server {LIVEKIT_URL}...")
+        room = Room()
 
-    logger.info("Shutdown process initiated. Cancelling all tasks...")
-    
-    for _, task in active_tasks.items():
-        task.cancel()
-    
-    # Wait for tasks to cancel
-    if active_tasks:
-        await asyncio.gather(*active_tasks.values(), return_exceptions=True)
+        @room.on("disconnected")
+        def on_disconnected(reason):
+            logger.error(f"Room disconnected unexpectedly: {reason}")
+            shutdown_event.set()
+
+        await room.connect(LIVEKIT_URL, str(token))
+        logger.info("Connected to WebRTC Room!")
+
+        # Start token renewal background task
+        background_tasks.append(asyncio.create_task(token_renewal_loop(
+            device_id=DEVICE_ID,
+            device_secret=DEVICE_SECRET,
+            backend_url=BACKEND_URL
+        )))
+
+        # Start device status telemetry loop
+        background_tasks.append(asyncio.create_task(device_status_loop(room, DEVICE_ID)))
+
+        logger.info("Fetching camera configurations...")
         
-    token_task.cancel()
-    status_task.cancel()
+        fetched_cameras = None
+        while fetched_cameras is None and not shutdown_event.is_set():
+            fetched_cameras_data = await fetch_cameras(
+                device_id=DEVICE_ID,
+                device_secret=DEVICE_SECRET,
+                backend_url=BACKEND_URL
+            )
 
-    logger.info("Disconnecting...")
-    await room.disconnect()
+            fetched_cameras = fetched_cameras_data.get("cameras", [])
+            is_inference_active = fetched_cameras_data.get("is_inference_active", False)
+
+            if is_inference_active:
+                CONFIG["run_ai"] = True
+            else:
+                CONFIG["run_ai"] = False
+
+            if fetched_cameras is None:
+                logger.error("Failed to fetch camera configurations. Retrying in 10 seconds...")
+                try:
+                    await asyncio.wait_for(shutdown_event.wait(), timeout=10.0)
+                except asyncio.TimeoutError:
+                    pass
+        
+        if shutdown_event.is_set():
+            return
+
+        CAMERAS = fetched_cameras if fetched_cameras else []
+
+        app_context = {
+            'active_tasks': active_tasks,
+            'cameras': CAMERAS,
+            'room': room,
+            'config': CONFIG,
+            'backend_url': BACKEND_URL,
+            'device_secret': DEVICE_SECRET
+        }
+
+        @room.on("data_received")
+        def on_data_received(dp: rtc.DataPacket):
+            device_on_data_received(
+                dp=dp,
+                device_id=DEVICE_ID,
+                app_context=app_context
+            )
+
+        for camera in CAMERAS:
+            logger.info(f"Setting up camera process for ID: {camera['id']}")
+
+            active_tasks[camera['id']] = asyncio.create_task(
+                run_camera_process(
+                    camera=camera,
+                    room=room,
+                    config=CONFIG,
+                    backend_url=BACKEND_URL,
+                    device_secret=DEVICE_SECRET
+                )
+            )
+
+        if not active_tasks:
+            logger.info("No cameras configured. Edge Device running in idle mode.")
+
+        await shutdown_event.wait()
+    
+    finally:
+        logger.info("Shutdown initiated. Cleaning up...")
+
+        all_tasks = [*background_tasks, *active_tasks.values()]
+        for task in all_tasks:
+            task.cancel()
+        if all_tasks:
+            await asyncio.gather(*all_tasks, return_exceptions=True)
+
+        if room is not None:
+            logger.info("Disconnecting from room...")
+            try:
+                await asyncio.wait_for(room.disconnect(), timeout=5.0)
+                logger.info("Disconnected cleanly.")
+            except asyncio.TimeoutError:
+                logger.error("room.disconnect() timed out.")
+            except Exception as e:
+                logger.error(f"Error during disconnect: {e}")
 
 if __name__ == "__main__":
     try:

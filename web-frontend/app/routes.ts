@@ -21,6 +21,16 @@ export default [
       route('create', 'routes/cctv-settings/create/index.tsx'),
       route(':camera_id', 'routes/cctv-settings/detail/index.tsx'),
     ]),
+    ...prefix('report-wa', [
+      index('routes/report-wa/entry/index.tsx'),
+      route('create', 'routes/report-wa/create/index.tsx'),
+      route(':id', 'routes/report-wa/detail/index.tsx'),
+    ]),
+    ...prefix('report-email', [
+      index('routes/report-email/entry/index.tsx'),
+      route('create', 'routes/report-email/create/index.tsx'),
+      route(':id', 'routes/report-email/detail/index.tsx'),
+    ]),
     ...prefix('footage-log', [
       index('routes/footage-log/entry/index.tsx'),
       route(':anomaly_id', 'routes/footage-log/detail/index.tsx'),
