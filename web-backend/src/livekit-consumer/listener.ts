@@ -17,10 +17,12 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
+  type RemoteTrack,
   type RemoteVideoTrack,
   Room,
   RoomEvent,
   TrackKind,
+  type VideoFrameEvent,
   VideoStream,
 } from '@livekit/rtc-node';
 import { sleep } from 'bun';
@@ -85,51 +87,7 @@ export class LivekitListener {
 
             (async () => {
               try {
-                while (true) {
-                  const { done, value } = await reader.read();
-                  if (done) break;
-
-                  const frame = value.frame;
-                  const trackName = track.name!;
-                  const cameraId = trackName.replace('track_', '');
-
-                  const buffer = Buffer.allocUnsafe(frame.data.length);
-                  buffer.set(frame.data);
-
-                  await frameStorageService.saveFrame(trackName, buffer);
-
-                  if (this.activeRecordings.has(cameraId)) {
-                    const session = this.activeRecordings.get(cameraId)!;
-
-                    if (session.remaining > 0) {
-                      if (!session.targetSize) {
-                        session.targetSize = buffer.length;
-                      }
-
-                      if (
-                        !session.width &&
-                        buffer.length === session.targetSize
-                      ) {
-                        session.width = frame.width;
-                        session.height = frame.height;
-                      }
-
-                      if (buffer.length === session.targetSize) {
-                        session.frames.push(buffer);
-                        session.lastValidBuffer = buffer;
-                        session.remaining--;
-                      } else if (session.lastValidBuffer) {
-                        session.frames.push(session.lastValidBuffer);
-                        session.remaining--;
-                      }
-
-                      if (session.remaining === 0) {
-                        this.finishRecording(session);
-                        this.activeRecordings.delete(cameraId);
-                      }
-                    }
-                  }
-                }
+                await this.handleTrackFrameSaving(track, reader);
               } catch (error) {
                 logger.error(
                   `❌ [LivekitListener] VideoStream error for track ${track.name}: ${error}`,
@@ -186,6 +144,54 @@ export class LivekitListener {
       }
     } catch (error) {
       logger.error(`❌ [LivekitListener] Error disconnecting: ${error}`);
+    }
+  }
+
+  private async handleTrackFrameSaving(
+    track: RemoteTrack,
+    reader: ReadableStreamDefaultReader<VideoFrameEvent>,
+  ) {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const frame = value.frame;
+      const trackName = track.name!;
+      const cameraId = trackName.replace('track_', '');
+
+      const buffer = Buffer.allocUnsafe(frame.data.length);
+      buffer.set(frame.data);
+
+      await frameStorageService.saveFrame(trackName, buffer);
+
+      if (this.activeRecordings.has(cameraId)) {
+        const session = this.activeRecordings.get(cameraId)!;
+
+        if (session.remaining > 0) {
+          if (!session.targetSize) {
+            session.targetSize = buffer.length;
+          }
+
+          if (!session.width && buffer.length === session.targetSize) {
+            session.width = frame.width;
+            session.height = frame.height;
+          }
+
+          if (buffer.length === session.targetSize) {
+            session.frames.push(buffer);
+            session.lastValidBuffer = buffer;
+            session.remaining--;
+          } else if (session.lastValidBuffer) {
+            session.frames.push(session.lastValidBuffer);
+            session.remaining--;
+          }
+
+          if (session.remaining === 0) {
+            this.finishRecording(session);
+            this.activeRecordings.delete(cameraId);
+          }
+        }
+      }
     }
   }
 

@@ -36,7 +36,7 @@ services:
     networks:
       - mocavis-network
 
-  mocavis-rstp:
+  mocavis-rtsp:
     image: livekit/livekit-server:v1.13.2
     container_name: mocavis-livekit-server
     network_mode: "host"
