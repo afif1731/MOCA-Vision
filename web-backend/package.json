@@ -5,8 +5,9 @@
   "main": "src/main.ts",
   "scripts": {
     "build": "bun build src/main.ts --target bun --outdir ./dist",
-    "build:binary": "bun build --compile --target bun --outfile server ./src/main.ts --external consolidate --external @livekit/rtc-node --external @aws-sdk/client-s3",
+    "build:binary": "bun build --compile --target bun --outfile server ./src/main.ts --external consolidate --external @aws-sdk/client-s3",
     "build:binary:prod": "dotenv -e ../.env.production -- bun build:binary",
+    "build:prod": "dotenv -e ../.env.production -- bun build",
     "db:dev": "dotenv -e ../.env.development -- bun migrate:dev && bun seed:dev",
     "db:prod": "dotenv -e ../.env.production -- bun migrate:prod && bun seed:prod",
     "docker:down:dev": "docker compose --env-file ../.env.development -f ../docker-compose-db.yml down",
@@ -28,8 +29,9 @@
     "seed:dev": "dotenv -e ../.env.development -- bun ./prisma/seeder/seeder.ts",
     "seed:prod": "dotenv -e ../.env.production -- bun ./prisma/seeder/seeder.ts",
     "sort:package": "sort-package-json",
-    "start": "dotenv -e ../.env.production -- ./server",
-    "start-deploy:dev": "dotenv -e ../.env.development -- ./server",
+    "start": "bun --env-file=.env.production ./src/main.ts",
+    "start:binary": "dotenv -e ../.env.production -- ./server",
+    "start:binary:dev": "dotenv -e ../.env.development -- ./server",
     "start:dev": "dotenv -e ../.env.development -- bun run --watch src/main.ts"
   },
   "lint-staged": {
