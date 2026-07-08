@@ -23,15 +23,15 @@ export const WhatsappReceiverDetailSchema = v.object({
 export const CreateWhatsappReceiverSchema = v.object({
   name: v.pipe(v.string(), v.trim(), v.nonEmpty('Name is required')),
   wa_chat_id: v.pipe(v.string(), v.trim(), v.nonEmpty('WhatsApp Chat ID is required')),
-  is_group: v.optional(v.boolean(), false),
+  is_group: v.boolean(),
   is_activated: v.optional(v.boolean(), true),
 });
 
 export const EditWhatsappReceiverSchema = v.object({
   name: v.pipe(v.string(), v.trim(), v.nonEmpty('Name is required')),
   wa_chat_id: v.pipe(v.string(), v.trim(), v.nonEmpty('WhatsApp Chat ID is required')),
-  is_group: v.optional(v.boolean(), false),
-  is_activated: v.optional(v.boolean(), true),
+  is_group: v.optional(v.boolean(), undefined),
+  is_activated: v.optional(v.boolean(), undefined),
 });
 
 export type IWhatsappReceiverItem = v.InferInput<typeof WhatsappReceiverItemSchema>;

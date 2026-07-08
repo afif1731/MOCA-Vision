@@ -27,7 +27,7 @@ export abstract class ReportWhatsappService {
       data: {
         name: data.name,
         wa_chat_id: data.wa_chat_id,
-        is_group: data.is_group ?? false,
+        is_group: data.is_group,
         is_activated: data.is_activated ?? true,
       },
     });

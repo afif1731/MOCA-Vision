@@ -10,8 +10,8 @@ export type IWhatsappListQuery = Static<typeof WhatsappListQuerySchema>;
 export const CreateWhatsappRequestSchema = t.Object({
   name: t.String({ minLength: 1 }),
   wa_chat_id: t.String({ minLength: 1 }),
-  is_group: t.Optional(t.Boolean({ default: false })),
-  is_activated: t.Optional(t.Boolean({ default: true })),
+  is_group: t.BooleanString(),
+  is_activated: t.Optional(t.BooleanString()),
 });
 export type ICreateWhatsappRequest = Static<typeof CreateWhatsappRequestSchema>;
 

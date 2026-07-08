@@ -37,7 +37,7 @@ export const EditEmailReceiverSchema = v.object({
     v.nonEmpty('Email is required'),
     v.email('Invalid email address')
   ),
-  is_activated: v.optional(v.boolean(), true),
+  is_activated: v.optional(v.boolean(), undefined),
 });
 
 export type IEmailReceiverItem = v.InferInput<typeof EmailReceiverItemSchema>;

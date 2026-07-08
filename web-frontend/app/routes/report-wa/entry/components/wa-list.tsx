@@ -48,14 +48,14 @@ function WaItem({ receiver }: { receiver: IWhatsappReceiverItem }) {
           <UsersIcon
             className={cn(
               'size-9 stroke-3',
-              receiver.is_activated ? 'text-green-500' : 'text-slate-500'
+              receiver.is_activated ? 'text-black' : 'text-slate-500'
             )}
           />
         ) : (
           <UserIcon
             className={cn(
               'size-9 stroke-3',
-              receiver.is_activated ? 'text-green-500' : 'text-slate-500'
+              receiver.is_activated ? 'text-black' : 'text-slate-500'
             )}
           />
         )}
@@ -66,8 +66,8 @@ function WaItem({ receiver }: { receiver: IWhatsappReceiverItem }) {
               className={cn(
                 'font-semibold hover:underline',
                 receiver.is_activated
-                  ? 'text-green-600 hover:text-green-700'
-                  : 'text-slate-500 hover:text-slate-600'
+                  ? 'text-red-500 hover:text-red-600'
+                  : 'text-red-300 hover:text-red-400'
               )}
             >
               {receiver.name}
@@ -85,7 +85,7 @@ function WaItem({ receiver }: { receiver: IWhatsappReceiverItem }) {
         </Text>
         <input
           type="checkbox"
-          className="size-5 cursor-pointer accent-teal-600"
+          className="size-5 cursor-pointer bg-slate-50 accent-teal-600"
           checked={receiver.is_activated}
           onChange={(e) => handleToggle(e.target.checked)}
         />

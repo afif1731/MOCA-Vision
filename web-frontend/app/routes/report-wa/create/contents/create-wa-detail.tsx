@@ -1,7 +1,7 @@
 import { useFormContext } from 'react-hook-form';
 
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import InputForm from '@/components/form/input';
+import { FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 
 import type { ICreateWhatsappReceiver } from '@/schemas/models';
 
@@ -10,32 +10,13 @@ export function CreateWaDetail() {
 
   return (
     <div className="flex w-full flex-col gap-4 rounded-xl bg-white px-6 py-6 drop-shadow-black/50 drop-shadow-xl lg:px-8">
-      <FormField
-        control={control}
-        name="name"
-        render={({ field }) => (
-          <FormItem className="flex w-full flex-col">
-            <FormLabel>Receiver Name *</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g. Admin Group" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <InputForm isRequired name="name" label="Receiver Name" placeholder="e.g. Admin Group" />
 
-      <FormField
-        control={control}
+      <InputForm
+        isRequired
         name="wa_chat_id"
-        render={({ field }) => (
-          <FormItem className="flex w-full flex-col">
-            <FormLabel>WhatsApp Chat ID *</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g. 6281234567890 or group invite link / ID" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
+        label="WhatsApp Chat ID"
+        placeholder="Phone number start with country code or group ID"
       />
 
       <div className="mt-2 flex flex-row items-center justify-start gap-12">
@@ -48,7 +29,7 @@ export function CreateWaDetail() {
               <FormControl>
                 <input
                   type="checkbox"
-                  className="size-5 cursor-pointer accent-teal-600"
+                  className="size-5 cursor-pointer bg-slate-50 accent-teal-600"
                   checked={field.value}
                   onChange={(e) => field.onChange(e.target.checked)}
                 />
@@ -66,7 +47,7 @@ export function CreateWaDetail() {
               <FormControl>
                 <input
                   type="checkbox"
-                  className="size-5 cursor-pointer accent-teal-600"
+                  className="size-5 cursor-pointer bg-slate-50 accent-teal-600"
                   checked={field.value}
                   onChange={(e) => field.onChange(e.target.checked)}
                 />

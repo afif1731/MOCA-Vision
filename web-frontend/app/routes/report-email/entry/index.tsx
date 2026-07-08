@@ -1,6 +1,6 @@
 import { PlusIcon, PowerIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigation } from 'react-router';
 
 import { useIsMobile } from '@/hooks/use-mobile';
 import { api } from '@/lib/axios';
@@ -20,35 +20,34 @@ export function meta({}: Route.MetaArgs) {
   return generateMeta('Email Receivers', 'Email Report Receivers');
 }
 
-export default function ReportEmailPage() {
+export async function clientLoader() {
+  try {
+    const [receiversRes, settingsRes] = await Promise.all([
+      api.get<IEmailReceiverItem[]>('/report/email'),
+      api.get<{ report_auto_send_email: boolean }>('/system/settings'),
+    ]);
+    return {
+      receivers: receiversRes.data,
+      globalEmailActive: settingsRes.data.report_auto_send_email,
+      isError: false,
+    };
+  } catch (error) {
+    handleApiResponseError(error, { withToast: false });
+    return { receivers: [], globalEmailActive: false, isError: true };
+  }
+}
+
+export default function ReportEmailPage({ loaderData }: Route.ComponentProps) {
   const isMobile = useIsMobile();
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isError, setIsError] = useState<boolean>(false);
-  const [receivers, setReceivers] = useState<IEmailReceiverItem[]>([]);
-  const [globalEmailActive, setGlobalEmailActive] = useState<boolean>(false);
+  const navigation = useNavigation();
+  const { receivers, globalEmailActive: initialGlobalEmailActive, isError } = loaderData;
+
+  const [globalEmailActive, setGlobalEmailActive] = useState<boolean>(initialGlobalEmailActive);
   const [isUpdatingGlobal, setIsUpdatingGlobal] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchReceivers = async () => {
-      try {
-        setIsLoading(true);
-        setIsError(false);
-        const [receiversRes, settingsRes] = await Promise.all([
-          api.get<IEmailReceiverItem[]>('/report/email'),
-          api.get<{ report_auto_send_email: boolean }>('/system/settings'),
-        ]);
-        setReceivers(receiversRes.data);
-        setGlobalEmailActive(settingsRes.data.report_auto_send_email);
-      } catch (error) {
-        handleApiResponseError(error);
-        setIsError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchReceivers();
-  }, []);
+    setGlobalEmailActive(initialGlobalEmailActive);
+  }, [initialGlobalEmailActive]);
 
   const handleToggleGlobal = async () => {
     try {
@@ -56,13 +55,15 @@ export default function ReportEmailPage() {
       const nextStatus = !globalEmailActive;
       await api.patch('/system/settings', { report_auto_send_email: String(nextStatus) });
       setGlobalEmailActive(nextStatus);
-      toast.success(`Global Email Report has been ${nextStatus ? 'enabled' : 'disabled'}`);
+      toast.success(`Email Report has been ${nextStatus ? 'enabled' : 'disabled'}`);
     } catch (error) {
       handleApiResponseError(error);
     } finally {
       setIsUpdatingGlobal(false);
     }
   };
+
+  const isLoading = navigation.state === 'loading';
 
   return (
     <div
@@ -82,10 +83,10 @@ export default function ReportEmailPage() {
           onClick={handleToggleGlobal}
           disabled={isUpdatingGlobal || isLoading}
         >
-          {globalEmailActive ? 'Disable Global Email Report' : 'Enable Global Email Report'}
+          {globalEmailActive ? 'Disable Email Report' : 'Enable Email Report'}
         </Button>
         <Button asChild variant="default" size="lg" leftIcon={<PlusIcon />}>
-          <Link to="/report-email/create">Create Receiver</Link>
+          <Link to="/report-email/create">Create</Link>
         </Button>
       </div>
 

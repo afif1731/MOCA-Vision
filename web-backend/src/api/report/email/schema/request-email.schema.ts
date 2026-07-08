@@ -10,7 +10,7 @@ export type IEmailListQuery = Static<typeof EmailListQuerySchema>;
 export const CreateEmailRequestSchema = t.Object({
   name: t.String({ minLength: 1 }),
   email: t.String({ format: 'email' }),
-  is_activated: t.Optional(t.Boolean({ default: true })),
+  is_activated: t.Optional(t.BooleanString()),
 });
 export type ICreateEmailRequest = Static<typeof CreateEmailRequestSchema>;
 

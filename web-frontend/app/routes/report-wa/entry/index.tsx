@@ -1,6 +1,6 @@
 import { PlusIcon, PowerIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigation } from 'react-router';
 
 import { useIsMobile } from '@/hooks/use-mobile';
 import { api } from '@/lib/axios';
@@ -20,35 +20,34 @@ export function meta({}: Route.MetaArgs) {
   return generateMeta('WhatsApp Receivers', 'WhatsApp Report Receivers');
 }
 
-export default function ReportWaPage() {
+export async function clientLoader() {
+  try {
+    const [receiversRes, settingsRes] = await Promise.all([
+      api.get<IWhatsappReceiverItem[]>('/report/wa'),
+      api.get<{ report_auto_send_wa: boolean }>('/system/settings'),
+    ]);
+    return {
+      receivers: receiversRes.data,
+      globalWaActive: settingsRes.data.report_auto_send_wa,
+      isError: false,
+    };
+  } catch (error) {
+    handleApiResponseError(error, { withToast: false });
+    return { receivers: [], globalWaActive: false, isError: true };
+  }
+}
+
+export default function ReportWaPage({ loaderData }: Route.ComponentProps) {
   const isMobile = useIsMobile();
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isError, setIsError] = useState<boolean>(false);
-  const [receivers, setReceivers] = useState<IWhatsappReceiverItem[]>([]);
-  const [globalWaActive, setGlobalWaActive] = useState<boolean>(false);
+  const navigation = useNavigation();
+  const { receivers, globalWaActive: initialGlobalWaActive, isError } = loaderData;
+
+  const [globalWaActive, setGlobalWaActive] = useState<boolean>(initialGlobalWaActive);
   const [isUpdatingGlobal, setIsUpdatingGlobal] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchReceivers = async () => {
-      try {
-        setIsLoading(true);
-        setIsError(false);
-        const [receiversRes, settingsRes] = await Promise.all([
-          api.get<IWhatsappReceiverItem[]>('/report/wa'),
-          api.get<{ report_auto_send_wa: boolean }>('/system/settings'),
-        ]);
-        setReceivers(receiversRes.data);
-        setGlobalWaActive(settingsRes.data.report_auto_send_wa);
-      } catch (error) {
-        handleApiResponseError(error);
-        setIsError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchReceivers();
-  }, []);
+    setGlobalWaActive(initialGlobalWaActive);
+  }, [initialGlobalWaActive]);
 
   const handleToggleGlobal = async () => {
     try {
@@ -56,13 +55,15 @@ export default function ReportWaPage() {
       const nextStatus = !globalWaActive;
       await api.patch('/system/settings', { report_auto_send_wa: String(nextStatus) });
       setGlobalWaActive(nextStatus);
-      toast.success(`Global WA Report has been ${nextStatus ? 'enabled' : 'disabled'}`);
+      toast.success(`WA Report has been ${nextStatus ? 'enabled' : 'disabled'}`);
     } catch (error) {
       handleApiResponseError(error);
     } finally {
       setIsUpdatingGlobal(false);
     }
   };
+
+  const isLoading = navigation.state === 'loading';
 
   return (
     <div
@@ -82,10 +83,10 @@ export default function ReportWaPage() {
           onClick={handleToggleGlobal}
           disabled={isUpdatingGlobal || isLoading}
         >
-          {globalWaActive ? 'Disable Global WA Report' : 'Enable Global WA Report'}
+          {globalWaActive ? 'Disable WA Report' : 'Enable WA Report'}
         </Button>
         <Button asChild variant="default" size="lg" leftIcon={<PlusIcon />}>
-          <Link to="/report-wa/create">Create Receiver</Link>
+          <Link to="/report-wa/create">Create</Link>
         </Button>
       </div>
 

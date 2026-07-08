@@ -45,10 +45,7 @@ function EmailItem({ receiver }: { receiver: IEmailReceiverItem }) {
     <div className="flex h-fit w-full flex-row items-center justify-between gap-6 rounded-xl bg-white px-6 py-4 drop-shadow-black/50 drop-shadow-xl">
       <div className="flex items-center gap-6">
         <MailIcon
-          className={cn(
-            'size-9 stroke-3',
-            receiver.is_activated ? 'text-green-500' : 'text-slate-500'
-          )}
+          className={cn('size-9 stroke-3', receiver.is_activated ? 'text-black' : 'text-slate-500')}
         />
         <div className="flex flex-col items-start justify-start gap-2">
           <Link to={`/report-email/${receiver.id}`}>
@@ -57,8 +54,8 @@ function EmailItem({ receiver }: { receiver: IEmailReceiverItem }) {
               className={cn(
                 'font-semibold hover:underline',
                 receiver.is_activated
-                  ? 'text-green-600 hover:text-green-700'
-                  : 'text-slate-500 hover:text-slate-600'
+                  ? 'text-red-500 hover:text-red-600'
+                  : 'text-red-300 hover:text-red-400'
               )}
             >
               {receiver.name}
@@ -76,7 +73,7 @@ function EmailItem({ receiver }: { receiver: IEmailReceiverItem }) {
         </Text>
         <input
           type="checkbox"
-          className="size-5 cursor-pointer accent-teal-600"
+          className="size-5 cursor-pointer bg-slate-50 accent-teal-600"
           checked={receiver.is_activated}
           onChange={(e) => handleToggle(e.target.checked)}
         />
