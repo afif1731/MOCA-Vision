@@ -78,11 +78,13 @@ export const WebsocketManager = new Elysia({ name: 'websocket-manager' }).ws(
 
     message(ws, data) {
       const { device_id: deviceId } = ws.data.query;
+      logger.info(data);
 
       if (socketMap.get(deviceId) !== ws) return;
 
       switch (data.type) {
         case 'violence_detection': {
+          logger.info(`receiving violence detection from ${deviceId}`);
           WebsocketListener.handleViolenceDetection(data.payload).catch(
             error => {
               logger.error(

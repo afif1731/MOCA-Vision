@@ -172,7 +172,6 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
             if should_publish:
                 await publish_violence_detection(detection_data, room)
                 if len(violence_events) > 0:
-                    logger.info('violence detection send to backend')
                     _ = asyncio.create_task(send_to_backend(config, ws_detection_payload))
             
             # --- PUBLISH FRAME KE LIVEKIT ---

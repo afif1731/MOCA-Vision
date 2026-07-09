@@ -130,7 +130,6 @@ async def send_to_backend(config: dict, message: dict) -> bool:
     
   try:
     await ws.send(json.dumps(message))
-    logger.info('message send to backend')
     return True
   except Exception as e:
     logger.error(f"Failed to send to backend: {e}")
