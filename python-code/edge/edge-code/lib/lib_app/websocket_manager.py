@@ -15,23 +15,29 @@ RECONNECT_DELAY = 5.0
 
 async def _listen(ws, app_context: dict):
   """Loop menerima perintah dari backend."""
-  async for raw in ws:
-    try:
-      msg = json.loads(raw)
-    except json.JSONDecodeError:
-      logger.error(f"Pesan bukan JSON valid: {raw[:120]}")
-      continue
+  try:
+    async for raw in ws:
+      try:
+        msg = json.loads(raw)
+      except json.JSONDecodeError:
+        logger.error(f"Pesan bukan JSON valid: {raw[:120]}")
+        continue
 
-    try:
-      await route_backend_request(msg, app_context)
-    except Exception as e:
-      logger.error(f"Gagal memproses perintah: {e}")
+      try:
+        await route_backend_request(msg, app_context)
+      except Exception as e:
+        logger.error(f"Gagal memproses perintah: {e}")
+  except ConnectionClosed as e:
+    logger.warning(f"WebSocket closed during listen: {e}")
 
 async def _heartbeat(ws, interval: float = 20.0):
   """Kirim heartbeat agar backend tahu koneksi hidup."""
-  while True:
-    await asyncio.sleep(interval)
-    await ws.send(json.dumps({"type": "heartbeat"}))
+  try:
+    while True:
+      await asyncio.sleep(interval)
+      await ws.send(json.dumps({"type": "heartbeat"}))
+  except ConnectionClosed:
+    pass
 
 async def edge_control_channel(
     device_id: str,
@@ -82,6 +88,10 @@ async def edge_control_channel(
         for task in pending:
           task.cancel()
         await asyncio.gather(*pending, return_exceptions=True)
+        for task in done:
+          exc = task.exception()
+          if exc and not isinstance(exc, (ConnectionClosed, asyncio.CancelledError)):
+            logger.error(f"Task exception: {exc}")
 
         if shutdown_event.is_set():
           return
