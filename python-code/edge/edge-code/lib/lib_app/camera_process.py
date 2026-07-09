@@ -88,11 +88,12 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
     logger.info(f"[{camera_id}] Connected to AI Server!")
     
     # Kirim Payload Konfigurasi ke AI Server
+    clean_config = {k: v for k, v in config.items() if k not in ["control_ws", "ws_control"]}
     req_payload = {
         "camera_id": camera_id,
         "input_source": camera_source,
         "source_type": source_type,
-        "config": config
+        "config": clean_config
     }
     req_bytes = json.dumps(req_payload).encode('utf-8')
     header = struct.pack('>I', len(req_bytes))
