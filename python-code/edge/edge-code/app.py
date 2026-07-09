@@ -192,7 +192,13 @@ async def main():
         for task in all_tasks:
             task.cancel()
         if all_tasks:
-            await asyncio.gather(*all_tasks, return_exceptions=True)
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*all_tasks, return_exceptions=True),
+                    timeout=3.0
+                )
+            except asyncio.TimeoutError:
+                logger.warning("Some background tasks took too long to shut down and were forcefully stopped.")
 
         if room is not None:
             logger.info("Disconnecting from room...")

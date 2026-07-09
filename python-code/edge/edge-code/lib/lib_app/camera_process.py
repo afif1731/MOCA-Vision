@@ -199,7 +199,9 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
         logger.info(f"Shutting down camera client {camera_id}...")
         client.close()
         try:
-            await room.local_participant.unpublish_track(publication.sid)
+            await asyncio.wait_for(room.local_participant.unpublish_track(publication.sid), timeout=2.0)
             logger.info(f"[{camera_id}] Track unpublished.")
+        except asyncio.TimeoutError:
+            logger.warning(f"[{camera_id}] unpublish_track timed out.")
         except Exception as e:
             logger.error(f"[{camera_id}] Failed to unpublish track: {e}")
