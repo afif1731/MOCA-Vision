@@ -12,8 +12,7 @@ from lib.lib_app.get_camera import fetch_cameras
 from lib.lib_app.camera_process import run_camera_process
 from lib.lib_app.livekit_message_publish import device_status_loop
 from lib.lib_app.livekit_access_token import fetch_access_token, token_renewal_loop
-
-from consumer.routes import device_on_data_received
+from lib.lib_app.websocket_manager import edge_control_channel
 
 os.environ['GLOG_v'] = '2'
 os.environ['GLOG_minloglevel'] = '0'
@@ -56,6 +55,8 @@ CONFIG = {
     "YOLO_FILE": YOLO_FILE,
     "GNN_BACKBONE_FILE": GNN_BACKBONE_FILE,
     "GNN_HEAD_FILE": GNN_HEAD_FILE,
+    "device_id": DEVICE_ID,
+    "ws_control": None,
     "run_ai": True
 }
 
@@ -158,13 +159,13 @@ async def main():
             'device_secret': DEVICE_SECRET
         }
 
-        @room.on("data_received")
-        def on_data_received(dp: rtc.DataPacket):
-            device_on_data_received(
-                dp=dp,
-                device_id=DEVICE_ID,
-                app_context=app_context
-            )
+        background_tasks.append(asyncio.create_task(edge_control_channel(
+            device_id=DEVICE_ID,
+            device_secret=DEVICE_SECRET,
+            backend_ws_url=BACKEND_URL,
+            app_context=app_context,
+            shutdown_event=shutdown_event
+        )))
 
         for camera in CAMERAS:
             logger.info(f"Setting up camera process for ID: {camera['id']}")

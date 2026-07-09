@@ -53,8 +53,8 @@ export const EdgeDeviceController = new Elysia({
       )
       .get(
         '/status',
-        async () => {
-          await EdgeDeviceService.sendDeviceStatusRequest();
+        () => {
+          EdgeDeviceService.sendDeviceStatusRequest();
 
           return new SuccessResponse(
             StatusCodes.OK,

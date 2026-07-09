@@ -32,8 +32,13 @@ export const CookieUtils = {
       value: '',
       maxAge: 0,
       httpOnly: true,
-      secure: process.env['NODE_ENV'] === 'production',
-      sameSite: process.env['NODE_ENV'] === 'production' ? 'lax' : 'none',
+      secure: process.env['COOKIE_SECURE'] === 'true',
+      sameSite:
+        (process.env['COOKIE_SAMESITE'] as
+          | boolean
+          | 'lax'
+          | 'strict'
+          | 'none') || 'lax',
       domain: process.env.COOKIE_DOMAIN,
       path: '/',
     });
@@ -42,8 +47,13 @@ export const CookieUtils = {
       value: '',
       maxAge: 0,
       httpOnly: true,
-      secure: process.env['NODE_ENV'] === 'production',
-      sameSite: process.env['NODE_ENV'] === 'production' ? 'lax' : 'none',
+      secure: process.env['COOKIE_SECURE'] === 'true',
+      sameSite:
+        (process.env['COOKIE_SAMESITE'] as
+          | boolean
+          | 'lax'
+          | 'strict'
+          | 'none') || 'lax',
       domain: process.env.COOKIE_DOMAIN,
       path: '/',
     });

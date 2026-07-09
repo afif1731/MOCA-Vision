@@ -1,7 +1,5 @@
-import json
 import asyncio
 import logging
-from livekit.rtc import DataPacket
 
 from .service.camera_service import CameraService
 from .service.device_service import DeviceService
@@ -31,7 +29,17 @@ async def route_backend_request(payload: dict, app_context: dict):
             return
     
     elif service == 'DEVICE':
-        if method == 'ai-shutdown':
+        if method == 'status-request':
+            logger.info(f"receiving frontend request device status")
+            asyncio.create_task(
+                publish_device_status(
+                    room=app_context['room'],
+                    device_id=app_context["config"]['device_id'],
+                    frontend_request=True
+                )
+            )
+            return
+        elif method == 'ai-shutdown':
             await DeviceService.ai_shutdown(data, app_context)
             return
         elif method == 'ai-activate':
@@ -44,30 +52,3 @@ async def route_backend_request(payload: dict, app_context: dict):
     else:
         logger.warning(f"Service {service} not recognized")
         return
-
-def device_on_data_received(dp: DataPacket, device_id: str, app_context: dict):
-    topic = dp.topic if hasattr(dp, 'topic') else None
-    data = dp.data if hasattr(dp, 'data') else None
-    
-    try:
-        if topic == f'backend_request_{device_id}' and data is not None:
-            logger.info(f"receiving backend request device status")
-            if isinstance(data, bytes):
-                payload_str = data.decode('utf-8')
-            else:
-                payload_str = str(data)
-            payload = json.loads(payload_str)
-            asyncio.create_task(route_backend_request(payload, app_context))
-
-        elif topic == 'frontend_request_device_status':
-            logger.info(f"receiving frontend request device status")
-            asyncio.create_task(
-                publish_device_status(
-                    room=app_context['room'],
-                    device_id=device_id,
-                    frontend_request=True
-                )
-            )
-
-    except Exception as e:
-        logger.error(f"Failed to process backend_request data: {e}")

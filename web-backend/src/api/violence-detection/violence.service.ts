@@ -2,8 +2,8 @@ import { StatusCodes } from 'http-status-codes';
 import { validate as isValidUuid } from 'uuid';
 
 import { ErrorResponse, prisma } from '@/common';
-import { livekitListener } from '@/livekit-consumer/listener';
 import { FileManager, paginate } from '@/utils';
+import { WebsocketListener } from '@/websocket/listener';
 import { type DetectedAnomalies } from '~/generated/prisma/client';
 import {
   type DetectedAnomaliesOrderByWithRelationInput,
@@ -104,7 +104,7 @@ export abstract class ViolenceService {
   }
 
   static async recordDummyViolence(camera_id: string) {
-    await livekitListener.triggerDummyRecording(camera_id);
+    await WebsocketListener.triggerDummyRecording(camera_id);
 
     return true;
   }

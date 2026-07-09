@@ -10,16 +10,10 @@ export const ViolenceEventLabel = {
 
 export type IViolenceEventLabel = keyof typeof ViolenceEventLabel;
 
-export interface AbsoluteSkeleton {
-  x: number;
-  y: number;
-}
-
 export interface ViolenceEvent {
   group_id: number;
   label: IViolenceEventLabel;
   confidence: number;
-  skeletons: AbsoluteSkeleton[];
 }
 
 export interface ViolenceDetectionPayload {

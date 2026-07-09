@@ -11,37 +11,22 @@
 /* eslint-disable unicorn/text-encoding-identifier-case */
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable unicorn/prefer-at */
-import { spawn } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
 
 import {
-  type RemoteTrack,
   type RemoteVideoTrack,
   Room,
   RoomEvent,
   TrackKind,
-  type VideoFrameEvent,
   VideoStream,
 } from '@livekit/rtc-node';
-import { sleep } from 'bun';
 import { AccessToken } from 'livekit-server-sdk';
 
-import { MailerService } from '@/api/mailer/mailer.service';
-import { WhatsAppService } from '@/api/whatsapp/whatsapp.service';
-import { type AnomalyType } from '~/generated/prisma/enums';
+import { CameraRecorder } from '@/utils/video-recorder.util';
 
-import { LiveKitConfig, logger, prisma } from '../common';
-import { ViolenceThresholdConfig } from '../common/config/violence-threshold.config';
-import { frameStorageService } from '../redis/frame-storage';
-import { type RecordingSession, type ViolenceDetectionPayload } from './schema';
+import { LiveKitConfig, logger } from '../common';
 
 export class LivekitListener {
   private room: Room;
-  private activeRecordings = new Map<string, RecordingSession>();
-
-  private readonly VIDEO_FPS = 30;
 
   constructor() {
     this.room = new Room();
@@ -53,8 +38,8 @@ export class LivekitListener {
         LiveKitConfig.API_KEY,
         LiveKitConfig.API_SECRET,
         {
-          identity: `backend-livekit-${randomUUID()}`,
-          name: 'Backend Listener',
+          identity: 'backend-livekit',
+          name: 'Backend LiveKit Listener',
         },
       );
       token.addGrant({
@@ -87,38 +72,13 @@ export class LivekitListener {
 
             (async () => {
               try {
-                await this.handleTrackFrameSaving(track, reader);
+                await CameraRecorder.handleViolenceFrameSaving(track, reader);
               } catch (error) {
                 logger.error(
                   `❌ [LivekitListener] VideoStream error for track ${track.name}: ${error}`,
                 );
               }
             })();
-          }
-        },
-      );
-
-      this.room.on(
-        RoomEvent.DataReceived,
-        (payload, participant, _kind, topic) => {
-          logger.debug(
-            `📥 [DataReceived] fired | topic=${JSON.stringify(topic)} | from=${participant?.identity ?? 'server/undefined'} | bytes=${payload.length}`,
-          );
-          if (topic !== 'violence_detection') return;
-
-          try {
-            const dataString = new TextDecoder().decode(payload);
-            const detection: ViolenceDetectionPayload = JSON.parse(dataString);
-
-            this.handleViolenceDetection(detection).catch(error => {
-              logger.error(
-                `❌ [LivekitListener] Error in handleViolenceDetection: ${error}`,
-              );
-            });
-          } catch (error) {
-            logger.error(
-              `❌ [LivekitListener] Failed to parse data channel message: ${error}`,
-            );
           }
         },
       );
@@ -145,418 +105,6 @@ export class LivekitListener {
     } catch (error) {
       logger.error(`❌ [LivekitListener] Error disconnecting: ${error}`);
     }
-  }
-
-  private async handleTrackFrameSaving(
-    track: RemoteTrack,
-    reader: ReadableStreamDefaultReader<VideoFrameEvent>,
-  ) {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const frame = value.frame;
-      const trackName = track.name!;
-      const cameraId = trackName.replace('track_', '');
-
-      const buffer = Buffer.allocUnsafe(frame.data.length);
-      buffer.set(frame.data);
-
-      await frameStorageService.saveFrame(trackName, buffer);
-
-      if (this.activeRecordings.has(cameraId)) {
-        const session = this.activeRecordings.get(cameraId)!;
-
-        if (session.remaining > 0) {
-          if (!session.targetSize) {
-            session.targetSize = buffer.length;
-          }
-
-          if (!session.width && buffer.length === session.targetSize) {
-            session.width = frame.width;
-            session.height = frame.height;
-          }
-
-          if (buffer.length === session.targetSize) {
-            session.frames.push(buffer);
-            session.lastValidBuffer = buffer;
-            session.remaining--;
-          } else if (session.lastValidBuffer) {
-            session.frames.push(session.lastValidBuffer);
-            session.remaining--;
-          }
-
-          if (session.remaining === 0) {
-            this.finishRecording(session);
-            this.activeRecordings.delete(cameraId);
-          }
-        }
-      }
-    }
-  }
-
-  private async handleViolenceDetection(
-    payload: ViolenceDetectionPayload,
-    force_recording: boolean = false,
-  ) {
-    if (!payload.events || payload.events.length === 0) return;
-
-    let highestConfidence = 0;
-    let detectedLabel = '';
-    let isViolent = false;
-
-    for (const event of payload.events) {
-      if (event.label === 'normal_event' || event.label === 'analyzing')
-        continue;
-
-      let threshold = ViolenceThresholdConfig.GLOBAL;
-
-      if (!ViolenceThresholdConfig.USE_GLOBAL) {
-        switch (event.label) {
-          case 'assault': {
-            threshold = ViolenceThresholdConfig.ASSAULT;
-            break;
-          }
-
-          case 'fighting': {
-            threshold = ViolenceThresholdConfig.FIGHTING;
-            break;
-          }
-
-          case 'robbery': {
-            threshold = ViolenceThresholdConfig.ROBBERY;
-            break;
-          }
-
-          case 'shooting': {
-            threshold = ViolenceThresholdConfig.SHOOTING;
-            break;
-          }
-        }
-      }
-
-      if (event.confidence > threshold) {
-        isViolent = true;
-
-        if (event.confidence > highestConfidence) {
-          highestConfidence = event.confidence;
-          detectedLabel = event.label;
-        }
-      }
-    }
-
-    if (isViolent && !this.activeRecordings.has(payload.camera_id)) {
-      const recentRecording = await prisma.detectedAnomalies.findFirst({
-        where: { camera_id: payload.camera_id },
-        select: { created_at: true },
-        orderBy: { created_at: 'desc' },
-      });
-      const currentDate = new Date(Date.now());
-
-      if (
-        recentRecording &&
-        !force_recording &&
-        currentDate.getTime() - recentRecording.created_at.getTime() < 60_000
-      ) {
-        logger.debug(
-          `💤 [LiveKit Listener] Violence Recording for camera ${payload.camera_id} is on 1 minute cooldown (${currentDate.getTime() - recentRecording.created_at.getTime()}ms remaining)`,
-        );
-
-        return;
-      }
-
-      logger.info(
-        `🚨 [LivekitListener] Violence detected on ${payload.camera_id} (${detectedLabel}: ${highestConfidence}). Starting 200 frame capture...`,
-      );
-
-      const trackName = `track_${payload.camera_id}`;
-
-      const previousFrames = await frameStorageService.getFrames(trackName);
-      previousFrames.reverse();
-
-      const sanitizedFrames: Buffer[] = [];
-      const targetSize =
-        previousFrames.length > 0
-          ? previousFrames[previousFrames.length - 1].length
-          : undefined;
-      let lastValidBuffer: Buffer | undefined;
-
-      if (targetSize) {
-        for (const f of previousFrames) {
-          if (f.length === targetSize) {
-            sanitizedFrames.push(f);
-            lastValidBuffer = f;
-          } else if (lastValidBuffer) {
-            sanitizedFrames.push(lastValidBuffer);
-          }
-        }
-      }
-
-      this.activeRecordings.set(payload.camera_id, {
-        cameraId: payload.camera_id,
-        frames: sanitizedFrames,
-        remaining: 200,
-        payload: payload,
-        highestConfidence,
-        detectedLabel,
-        targetSize,
-        lastValidBuffer,
-      });
-    }
-  }
-
-  private async finishRecording(session: RecordingSession) {
-    logger.info(
-      `🎥 [LivekitListener] Finished collecting frames for ${session.cameraId}. Encoding video...`,
-    );
-
-    if (!session.width || !session.height || session.frames.length === 0) {
-      logger.error('❌ [LivekitListener] Invalid session data for recording.');
-
-      return;
-    }
-
-    const folderPath = join(
-      process.cwd(),
-      process.env.FILE_STORAGE_PATH || 'uploads',
-      'violence-detection',
-    );
-
-    if (!existsSync(folderPath)) {
-      mkdirSync(folderPath, { recursive: true });
-    }
-
-    const fileName = `${Date.now()}-${session.cameraId}.mp4`;
-    const outputPath = join(folderPath, fileName);
-
-    const width = session.width;
-    const height = session.height;
-    const firstFrameSize = session.frames[0].length;
-
-    let pixFmt = 'rgba';
-
-    switch (firstFrameSize) {
-      case width * height * 4: {
-        pixFmt = 'rgba';
-        break;
-      }
-
-      case width * height * 3: {
-        pixFmt = 'rgb24';
-        break;
-      }
-
-      case width * height * 1.5: {
-        pixFmt = 'yuv420p';
-        break;
-      }
-
-      default: {
-        logger.warn(
-          `⚠️ [LivekitListener] Unknown pixel format for size ${firstFrameSize} (WxH: ${width}x${height}). Defaulting to rgba.`,
-        );
-      }
-    }
-
-    const ffmpeg = spawn('ffmpeg', [
-      '-y',
-      '-f',
-      'rawvideo',
-      '-vcodec',
-      'rawvideo',
-      '-s',
-      `${width}x${height}`,
-      '-pix_fmt',
-      pixFmt,
-      '-r',
-      this.VIDEO_FPS.toString(),
-      '-i',
-      '-',
-      '-vf',
-      'scale=trunc(iw/2)*2:trunc(ih/2)*2',
-      '-c:v',
-      'libx264',
-      '-preset',
-      'ultrafast',
-      '-pix_fmt',
-      'yuv420p',
-      '-r',
-      this.VIDEO_FPS.toString(),
-      outputPath,
-    ]);
-
-    ffmpeg.on('error', error => {
-      logger.error(
-        `❌ [LivekitListener] FFmpeg error for ${session.cameraId}: ${error}`,
-      );
-    });
-
-    ffmpeg.on('close', async code => {
-      if (code === 0) {
-        logger.info(
-          `✅ [LivekitListener] Video saved successfully to ${outputPath}`,
-        );
-        await this.saveAnomalyToDB(session, `violence-detection/${fileName}`);
-      } else {
-        logger.error(`❌ [LivekitListener] FFmpeg exited with code ${code}`);
-      }
-    });
-
-    // Write all buffers sequentially with backpressure handling to prevent data corruption
-    for (const frame of session.frames) {
-      if (ffmpeg.stdin.destroyed) break;
-      const canWrite = ffmpeg.stdin.write(frame);
-
-      if (!canWrite) {
-        await new Promise<void>(resolve => {
-          const drainHandler = () => {
-            ffmpeg.stdin.removeListener('error', errorHandler);
-            resolve();
-          };
-
-          const errorHandler = () => {
-            ffmpeg.stdin.removeListener('drain', drainHandler);
-            resolve();
-          };
-
-          ffmpeg.stdin.once('drain', drainHandler);
-          ffmpeg.stdin.once('error', errorHandler);
-        });
-      }
-    }
-
-    if (!ffmpeg.stdin.destroyed) {
-      ffmpeg.stdin.end();
-    }
-  }
-
-  private async saveAnomalyToDB(
-    session: RecordingSession,
-    relativeVideoPath: string,
-  ) {
-    try {
-      let anomalyType: AnomalyType = 'ASSAULT';
-
-      switch (session.detectedLabel) {
-        case 'assault': {
-          anomalyType = 'ASSAULT';
-          break;
-        }
-
-        case 'fighting': {
-          anomalyType = 'FIGHTING';
-          break;
-        }
-
-        case 'robbery': {
-          anomalyType = 'ROBBERY';
-          break;
-        }
-
-        case 'shooting': {
-          anomalyType = 'SHOOTING';
-          break;
-        }
-      }
-
-      const duration = Math.round(session.frames.length / this.VIDEO_FPS);
-
-      const camera = await prisma.cameras.findUnique({
-        where: { id: session.cameraId },
-        select: { id: true, name: true },
-      });
-      const systemSettings = await prisma.systemSettings.findFirst();
-
-      const videoStartDate = new Date(Date.now() - duration * 1000);
-
-      const newFootage = await prisma.detectedAnomalies.create({
-        data: {
-          camera_id: session.cameraId,
-          video_path: relativeVideoPath,
-          video_duration: duration,
-          anomaly_type: anomalyType,
-          confidence: session.highestConfidence,
-          is_reported:
-            !systemSettings?.report_auto_send_wa &&
-            !systemSettings?.report_auto_send_email
-              ? false
-              : true,
-          report_sent: {},
-          video_start_date: videoStartDate,
-          video_end_date: new Date(),
-        },
-        select: { id: true },
-      });
-
-      if (systemSettings!.report_auto_send_email) {
-        const emailList = await prisma.emailReceivers.findMany({
-          where: { is_activated: true },
-          select: { email: true },
-        });
-
-        await MailerService.sendViolenceReportMail(
-          emailList.map(receiver => receiver.email),
-          'MOCA-Vision Admin',
-          camera?.name || 'Unnamed Camera',
-          session.detectedLabel,
-          session.highestConfidence,
-          newFootage.id,
-          videoStartDate,
-        );
-
-        logger.info(`📨 [EmailSender] Report Sended to Emails`);
-      }
-
-      if (systemSettings!.report_auto_send_wa) {
-        const waReceiverList = await prisma.waReceivers.findMany({
-          where: { is_activated: true },
-          select: { name: true, wa_chat_id: true, is_group: true },
-        });
-
-        for (const waReceiver of waReceiverList) {
-          await WhatsAppService.sendViolenceDetection(
-            waReceiver.name,
-            camera?.name || 'Unnamed Camera',
-            waReceiver.wa_chat_id,
-            waReceiver.is_group,
-            session.detectedLabel,
-            session.highestConfidence,
-            newFootage.id,
-            videoStartDate,
-          );
-
-          await sleep(1000);
-        }
-
-        logger.info(`💚 [WhatsappSender] Report Sended to Whatsapps`);
-      }
-
-      logger.info(
-        `💾 [LivekitListener] Anomaly data saved to database for ${session.cameraId}`,
-      );
-    } catch (error) {
-      logger.error(
-        `❌ [LivekitListener] Failed to save anomaly to DB: ${error}`,
-      );
-    }
-  }
-
-  public async triggerDummyRecording(cameraId: string) {
-    logger.info(
-      `🧪 [LivekitListener] Dummy recording triggered for ${cameraId}`,
-    );
-    const dummyPayload: ViolenceDetectionPayload = {
-      camera_id: cameraId,
-      events: [
-        {
-          group_id: 1,
-          label: 'assault',
-          confidence: 0.99,
-          skeletons: [],
-        },
-      ],
-    };
-    await this.handleViolenceDetection(dummyPayload);
   }
 }
 

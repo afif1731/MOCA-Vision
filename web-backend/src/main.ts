@@ -24,6 +24,7 @@ import {
 } from './common';
 import { livekitListener } from './livekit-consumer/listener';
 import { systemCronjobs } from './utils';
+import { WebsocketManager } from './websocket/websocket-manager';
 
 const nodeEnv = process.env['NODE_ENV'] || 'development';
 const loggerConfig = LoggerConfig[nodeEnv] || LoggerConfig.development;
@@ -100,6 +101,7 @@ const app = new Elysia({
       FE_URL: t.String({ minLength: 1, error: 'FE_URL is required' }),
     }),
   )
+  .use(WebsocketManager)
   .use(systemCronjobs)
   .error({ ErrorResponse })
   .onAfterHandle(({ set, response, log, request, store }) => {
@@ -255,7 +257,7 @@ const app = new Elysia({
       return {
         success: false,
         statusCode: 404,
-        message: 'File tidak dapat ditemukan',
+        message: 'File not found',
       };
     }
 

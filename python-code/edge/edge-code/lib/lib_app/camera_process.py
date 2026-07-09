@@ -1,3 +1,4 @@
+import asyncio
 import os
 import cv2
 import time
@@ -11,6 +12,7 @@ import numpy as np
 from livekit import rtc
 from lib.utils import validate_file
 from lib.lib_app.livekit_message_publish import publish_violence_detection
+from lib.lib_app.websocket_manager import send_to_backend
 from lib.utils import text_aes_decrypt
 
 logger = logging.getLogger(__name__)
@@ -140,6 +142,24 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
                 "fps": round(fps, 1),
                 "events": events
             }
+
+            violence_events = [e for e in events if e.get("label") not in ["normal_event", "analyzing"]]
+
+            ws_detection_payload = {
+                "type": "violence_detection",
+                "payload": {
+                    "camera_id": camera_id,
+                    "events": [
+                        {
+                            "group_id": event["group_id"],
+                            "label": event["label"],
+                            "confidence": event["confidence"],
+                            "num_persons": len(event.get("skeletons", []))
+                        }
+                        for event in violence_events
+                    ]
+                }
+            }
             
             should_publish = True
             if not config.get('run_ai', True):
@@ -150,6 +170,8 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
             
             if should_publish:
                 await publish_violence_detection(detection_data, room)
+                if len(violence_events) > 0:
+                    _ = asyncio.create_task(send_to_backend(config, ws_detection_payload))
             
             # --- PUBLISH FRAME KE LIVEKIT ---
             # Decode JPEG kembali ke format OpenCV Matrix (BGR)

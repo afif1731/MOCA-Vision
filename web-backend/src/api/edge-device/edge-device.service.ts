@@ -12,8 +12,8 @@ import {
   LiveKitConfig,
   prisma,
 } from '@/common';
-import { LiveKitPublisher } from '@/livekit-consumer/publisher';
 import { createSlug, paginate } from '@/utils';
+import { WebsocketPublisher } from '@/websocket/publisher';
 import { type EdgeDevices } from '~/generated/prisma/client';
 import {
   type EdgeDevicesOrderByWithRelationInput,
@@ -313,7 +313,7 @@ export abstract class EdgeDeviceService {
     if (updatedDevice.status === 'ONLINE') {
       if (device.status !== 'ONLINE') {
         for (const camera of updatedDevice.cameras) {
-          await LiveKitPublisher.cameraCreate(device.id, {
+          WebsocketPublisher.cameraCreate(device.id, {
             camera_id: camera.id,
             source: camera.source,
             source_type: camera.source_type,
@@ -329,13 +329,13 @@ export abstract class EdgeDeviceService {
         typeof data.is_inference_active === 'boolean' &&
         device.is_inference_active !== data.is_inference_active
       ) {
-        await (data.is_inference_active
-          ? LiveKitPublisher.deviceAiActivate(device.id)
-          : LiveKitPublisher.deviceAiShutdown(device.id));
+        if (data.is_inference_active)
+          WebsocketPublisher.deviceAiActivate(device.id);
+        else WebsocketPublisher.deviceAiShutdown(device.id);
       }
     } else if (device.status) {
       for (const camera of updatedDevice.cameras) {
-        await LiveKitPublisher.cameraDelete(device_id, {
+        WebsocketPublisher.cameraDelete(device_id, {
           camera_id: camera.id,
         });
       }
@@ -363,7 +363,7 @@ export abstract class EdgeDeviceService {
     await prisma.edgeDevices.delete({ where: { id: device_id } });
 
     for (const camera of device.cameras) {
-      await LiveKitPublisher.cameraDelete(device_id, {
+      WebsocketPublisher.cameraDelete(device_id, {
         camera_id: camera.id,
       });
     }
@@ -371,8 +371,8 @@ export abstract class EdgeDeviceService {
     return true;
   }
 
-  static async sendDeviceStatusRequest() {
-    await LiveKitPublisher.deviceStatus();
+  static sendDeviceStatusRequest() {
+    WebsocketPublisher.deviceStatus();
 
     return true;
   }

@@ -1,7 +1,7 @@
 import Elysia from 'elysia';
 
-import { removeRefreshTokenJob } from './cronjobs';
+import { removeFootageLog, removeRefreshTokenJob } from './cronjobs';
 
-export const systemCronjobs = new Elysia({ name: 'system-cronjobs' }).use(
-  removeRefreshTokenJob,
-);
+export const systemCronjobs = new Elysia({ name: 'system-cronjobs' })
+  .use(removeRefreshTokenJob)
+  .use(removeFootageLog);

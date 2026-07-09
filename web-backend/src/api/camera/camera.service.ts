@@ -3,13 +3,13 @@ import { StatusCodes } from 'http-status-codes';
 import { validate as isValidUuid } from 'uuid';
 
 import { ErrorResponse, LiveKitConfig, prisma } from '@/common';
-import { LiveKitPublisher } from '@/livekit-consumer/publisher';
 import {
   createSlug,
   encryptTextToAES256,
   paginate,
   SampleVideoSource,
 } from '@/utils';
+import { WebsocketPublisher } from '@/websocket/publisher';
 import { type Cameras } from '~/generated/prisma/client';
 import { type CameraSourceType } from '~/generated/prisma/enums';
 import {
@@ -99,7 +99,7 @@ export abstract class CameraService {
     });
 
     if (data.device_id) {
-      await LiveKitPublisher.cameraCreate(data.device_id, {
+      WebsocketPublisher.cameraCreate(data.device_id, {
         camera_id: newCamera.id,
         source: newCamera.source,
         source_type: newCamera.source_type,
@@ -301,10 +301,10 @@ export abstract class CameraService {
 
     if (currentCamera.edge_device_id) {
       if (data.device_id && currentCamera.edge_device_id !== data.device_id) {
-        await LiveKitPublisher.cameraDelete(currentCamera.edge_device_id, {
+        WebsocketPublisher.cameraDelete(currentCamera.edge_device_id, {
           camera_id,
         });
-        await LiveKitPublisher.cameraCreate(data.device_id, {
+        WebsocketPublisher.cameraCreate(data.device_id, {
           camera_id: updatedCamera.id,
           source: updatedCamera.source,
           source_type: updatedCamera.source_type,
@@ -314,7 +314,7 @@ export abstract class CameraService {
           rtsp_authtag: updatedCamera.rtsp_authtag,
         });
       } else if (data.device_id === null) {
-        await LiveKitPublisher.cameraDelete(currentCamera.edge_device_id, {
+        WebsocketPublisher.cameraDelete(currentCamera.edge_device_id, {
           camera_id,
         });
       } else {
@@ -326,7 +326,7 @@ export abstract class CameraService {
               data.rtsp_username ||
               data.rtsp_password
             ) {
-              await LiveKitPublisher.cameraPatch(currentCamera.edge_device_id, {
+              WebsocketPublisher.cameraPatch(currentCamera.edge_device_id, {
                 camera_id: updatedCamera.id,
                 source: updatedCamera.source,
                 source_type: updatedCamera.source_type,
@@ -337,12 +337,12 @@ export abstract class CameraService {
               });
             }
           } else {
-            await LiveKitPublisher.cameraDelete(currentCamera.edge_device_id, {
+            WebsocketPublisher.cameraDelete(currentCamera.edge_device_id, {
               camera_id,
             });
           }
         } else if (data.status === 'ONLINE') {
-          await LiveKitPublisher.cameraCreate(currentCamera.edge_device_id, {
+          WebsocketPublisher.cameraCreate(currentCamera.edge_device_id, {
             camera_id: updatedCamera.id,
             source: updatedCamera.source,
             source_type: updatedCamera.source_type,
@@ -354,7 +354,7 @@ export abstract class CameraService {
         }
       }
     } else if (data.device_id && updatedCamera.status === 'ONLINE') {
-      await LiveKitPublisher.cameraCreate(data.device_id, {
+      WebsocketPublisher.cameraCreate(data.device_id, {
         camera_id: updatedCamera.id,
         source: updatedCamera.source,
         source_type: updatedCamera.source_type,
@@ -374,7 +374,7 @@ export abstract class CameraService {
     await prisma.cameras.delete({ where: { id: camera_id } });
 
     if (camera.edge_device_id) {
-      await LiveKitPublisher.cameraDelete(camera.edge_device_id, {
+      WebsocketPublisher.cameraDelete(camera.edge_device_id, {
         camera_id,
       });
     }
