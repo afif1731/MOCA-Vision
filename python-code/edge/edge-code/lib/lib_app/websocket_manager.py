@@ -117,11 +117,20 @@ async def edge_control_channel(
 async def send_to_backend(config: dict, message: dict) -> bool:
   """Kirim pesan naik ke backend (mis. laporan deteksi)."""
   ws = config.get("control_ws")
+
+  retries = 0
+  while ws is None and retries < 10:
+      await asyncio.sleep(0.5)
+      ws = config.get("control_ws")
+      retries += 1
+      
   if ws is None:
     # logger.warning("Control channel not ready yet. Skipping..")
     return False
+    
   try:
     await ws.send(json.dumps(message))
+    logger.info('message send to backend')
     return True
   except Exception as e:
     logger.error(f"Failed to send to backend: {e}")
