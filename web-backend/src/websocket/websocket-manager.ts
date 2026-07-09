@@ -68,13 +68,13 @@ export const WebsocketManager = new Elysia({ name: 'websocket-manager' }).ws(
       const existing = socketMap.get(deviceId);
 
       if (existing && existing !== ws) {
-        logger.warn(`Device ${deviceId} reconnect, closing old socket`);
+        // logger.warn(`Device ${deviceId} reconnect, closing old socket`);
         existing.close();
       }
 
       socketMap.set(deviceId, ws);
       heartbeatMap.set(deviceId, Date.now());
-      logger.info(`Device ${deviceId} connected to websocket`);
+      // logger.info(`Device ${deviceId} connected to websocket`);
     },
 
     message(ws, data) {

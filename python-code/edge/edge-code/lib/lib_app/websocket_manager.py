@@ -11,7 +11,7 @@ from consumer.routes import route_backend_request
 
 logger = logging.getLogger(__name__)
 
-RECONNECT_DELAY = 5.0
+RECONNECT_DELAY = 3
 
 async def _listen(ws, app_context: dict):
   """Loop menerima perintah dari backend."""
@@ -75,7 +75,7 @@ async def edge_control_channel(
         max_size=2**20,
       ) as ws:
         app_context["config"]["control_ws"] = ws
-        logger.info("✅ Control channel connected to backend")
+        # logger.info("✅ Control channel connected to backend")
 
         listen_task = asyncio.create_task(_listen(ws, app_context))
         hb_task = asyncio.create_task(_heartbeat(ws))
@@ -108,7 +108,7 @@ async def edge_control_channel(
     if shutdown_event.is_set():
       return
 
-    logger.info(f"Reconnecting in {RECONNECT_DELAY}s...")
+    # logger.info(f"Reconnecting in {RECONNECT_DELAY}s...")
     try:
       await asyncio.wait_for(shutdown_event.wait(), timeout=RECONNECT_DELAY)
     except asyncio.TimeoutError:
@@ -118,7 +118,7 @@ async def send_to_backend(config: dict, message: dict) -> bool:
   """Kirim pesan naik ke backend (mis. laporan deteksi)."""
   ws = config.get("control_ws")
   if ws is None:
-    logger.warning("Control channel not ready yet. Skipping..")
+    # logger.warning("Control channel not ready yet. Skipping..")
     return False
   try:
     await ws.send(json.dumps(message))

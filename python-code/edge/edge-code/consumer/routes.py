@@ -12,7 +12,7 @@ async def route_backend_request(payload: dict, app_context: dict):
     method = payload.get('method')
     data = payload.get('data', {})
 
-    logger.info(f"received data: {data}")
+    # logger.info(f"received data: {data}")
 
     if service == 'CAMERA':
         if method == 'create':
