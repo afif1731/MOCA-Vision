@@ -22,7 +22,6 @@ setInterval(() => {
       const ws = socketMap.get(deviceId);
 
       if (ws) {
-        logger.warn(`Device ${deviceId} heartbeat timeout. Closing socket...`);
         ws.close();
       }
 

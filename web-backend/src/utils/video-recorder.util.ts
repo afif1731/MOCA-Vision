@@ -129,44 +129,44 @@ export abstract class CameraRecorder {
 
         return;
       }
+    }
 
-      logger.info(
-        `🚨 [LivekitListener] Violence detected on ${camera_id} (${event.label}: ${event.confidence}). Starting 200 frame capture...`,
-      );
+    logger.info(
+      `🚨 [LivekitListener] Violence detected on ${camera_id} (${event.label}: ${event.confidence}). Starting 200 frame capture...`,
+    );
 
-      const trackName = `track_${camera_id}`;
-      const previousFrames = await frameStorageService.getFrames(trackName);
-      previousFrames.reverse();
+    const trackName = `track_${camera_id}`;
+    const previousFrames = await frameStorageService.getFrames(trackName);
+    previousFrames.reverse();
 
-      const sanitizedFrames: Buffer[] = [];
-      let lastValidBuffer: Buffer | undefined;
+    const sanitizedFrames: Buffer[] = [];
+    let lastValidBuffer: Buffer | undefined;
 
-      const targetSize =
-        previousFrames.length > 0
-          ? previousFrames[previousFrames.length - 1].length
-          : undefined;
+    const targetSize =
+      previousFrames.length > 0
+        ? previousFrames[previousFrames.length - 1].length
+        : undefined;
 
-      if (targetSize) {
-        for (const f of previousFrames) {
-          if (f.length === targetSize) {
-            sanitizedFrames.push(f);
-            lastValidBuffer = f;
-          } else if (lastValidBuffer) {
-            sanitizedFrames.push(lastValidBuffer);
-          }
+    if (targetSize) {
+      for (const f of previousFrames) {
+        if (f.length === targetSize) {
+          sanitizedFrames.push(f);
+          lastValidBuffer = f;
+        } else if (lastValidBuffer) {
+          sanitizedFrames.push(lastValidBuffer);
         }
       }
-
-      this.activeViolenceRecordings.set(camera_id, {
-        cameraId: camera_id,
-        frames: sanitizedFrames,
-        remaining: 200,
-        highestConfidence: event.confidence,
-        detectedLabel: event.label,
-        targetSize,
-        lastValidBuffer,
-      });
     }
+
+    this.activeViolenceRecordings.set(camera_id, {
+      cameraId: camera_id,
+      frames: sanitizedFrames,
+      remaining: 200,
+      highestConfidence: event.confidence,
+      detectedLabel: event.label,
+      targetSize,
+      lastValidBuffer,
+    });
   }
 
   static async handleViolenceFrameSaving(

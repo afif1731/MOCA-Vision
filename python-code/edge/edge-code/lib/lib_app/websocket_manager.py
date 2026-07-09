@@ -30,7 +30,7 @@ async def _listen(ws, app_context: dict):
   except ConnectionClosed as e:
     logger.warning(f"WebSocket closed during listen: {e}")
 
-async def _heartbeat(ws, interval: float = 20.0):
+async def _heartbeat(ws, interval: float = 10.0):
   """Kirim heartbeat agar backend tahu koneksi hidup."""
   try:
     while True:

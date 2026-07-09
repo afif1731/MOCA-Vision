@@ -27,7 +27,6 @@ export abstract class WebsocketListener {
     }
 
     if (!isViolenceExist) return;
-    logger.info(`Violence detected from ${data.camera_id}`);
 
     await CameraRecorder.recordViolence(
       data.camera_id,
