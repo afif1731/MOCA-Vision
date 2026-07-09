@@ -12,7 +12,6 @@ import numpy as np
 from livekit import rtc
 from lib.utils import validate_file
 from lib.lib_app.livekit_message_publish import publish_violence_detection
-from lib.lib_app.websocket_manager import send_to_backend
 from lib.utils import text_aes_decrypt
 
 logger = logging.getLogger(__name__)
@@ -27,6 +26,7 @@ def recv_exact(sock, n):
     return data
 
 async def run_camera_process(camera, room, config, backend_url, device_secret):
+    from lib.lib_app.websocket_manager import send_to_backend
     """
     Menjalankan proses pengiriman data ke LiveKit untuk satu kamera spesifik.
     (Berperan sebagai TCP Client untuk AI Server)
