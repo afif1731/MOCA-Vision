@@ -12,7 +12,7 @@ import numpy as np
 from livekit import rtc
 from lib.utils import validate_file
 from lib.lib_app.livekit_message_publish import publish_violence_detection
-from lib.utils import text_aes_decrypt
+from lib.utils import text_aes_decrypt, parse_size
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,8 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
     livekit_track_name = f"track_{camera_id}"
     
     logger.info(f"Setting up LiveKit transmission for camera {camera_id}")
-    source = rtc.VideoSource(640, 640)
+    frame_size = parse_size("STREAM_FRAME_SIZE", "640")
+    source = rtc.VideoSource(frame_size[0], frame_size[1])
     track = rtc.LocalVideoTrack.create_video_track(livekit_track_name, source)
     options = rtc.TrackPublishOptions()
     options.source = rtc.TrackSource.SOURCE_CAMERA
@@ -104,7 +105,11 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
     last_publish_time = 0.0
     
     try:
+        frame_iteration = 0
         while True:
+            frame_iteration += 1
+            t_recv_start = time.time()
+            
             # 1. Baca Header JPEG (4 bytes)
             jpeg_header = await asyncio.to_thread(recv_exact, client, 4)
             if not jpeg_header:
@@ -130,6 +135,9 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
             if not json_bytes:
                 break
                 
+            receive_ai_time = (time.time() - t_recv_start) * 1000.0
+            
+            t_post_start = time.time()
             events = json.loads(json_bytes.decode('utf-8'))
             
             # --- HITUNG FPS ---
@@ -168,17 +176,13 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
                     should_publish = False
                 else:
                     last_publish_time = current_time
-            
-            if should_publish:
-                await publish_violence_detection(detection_data, room)
-                if len(violence_events) > 0:
-                    _ = asyncio.create_task(send_to_backend(config, ws_detection_payload))
-            
+                    
             # --- PUBLISH FRAME KE LIVEKIT ---
             # Decode JPEG kembali ke format OpenCV Matrix (BGR)
             np_arr = np.frombuffer(jpeg_bytes, np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             
+            lk_frame = None
             if frame is not None:
                 # Convert BGR ke RGB untuk WebRTC
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -189,7 +193,28 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
                     type=rtc.VideoBufferType.RGB24, 
                     data=rgb_frame.tobytes()
                 )
+                
+            post_process_time = (time.time() - t_post_start) * 1000.0
+            
+            publish_stream_time = 0.0
+            if lk_frame is not None:
+                t_pub_stream_start = time.time()
                 source.capture_frame(lk_frame)
+                publish_stream_time = (time.time() - t_pub_stream_start) * 1000.0
+                
+            publish_livekit_time = 0.0
+            if should_publish:
+                t_pub_lk_start = time.time()
+                await publish_violence_detection(detection_data, room)
+                publish_livekit_time = (time.time() - t_pub_lk_start) * 1000.0
+            
+            publish_backend_time = 0.0
+            if should_publish and len(violence_events) > 0:
+                t_pub_be_start = time.time()
+                await send_to_backend(config, ws_detection_payload)
+                publish_backend_time = (time.time() - t_pub_be_start) * 1000.0
+                
+            logger.info(f"frame {frame_iteration}: , receive_ai: {receive_ai_time:.1f} , post_process: {post_process_time:.1f} , publish_stream: {publish_stream_time:.1f} , publish_livekit: {publish_livekit_time:.1f} , publish_backend: {publish_backend_time:.1f}")
             
             await asyncio.sleep(0.001)
 

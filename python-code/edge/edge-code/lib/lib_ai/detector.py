@@ -9,8 +9,7 @@ logger = logging.getLogger(__name__)
 import tflite_runtime.interpreter as tflite
 
 def yolo_pose_extraction(yolo_interpreter: tflite.Interpreter, frame: np.ndarray, conf_thresh=0.25, iou_thresh=0.45, imgsz=None):
-    # t0 = time.time()
-    
+    t_yolo_start = time.time()
     input_details = yolo_interpreter.get_input_details()[0]
     output_details = yolo_interpreter.get_output_details()[0]
     
@@ -18,7 +17,11 @@ def yolo_pose_extraction(yolo_interpreter: tflite.Interpreter, frame: np.ndarray
 
     is_space_to_depth = False
     if imgsz is not None:
-        input_height, input_width = imgsz, imgsz
+        if isinstance(imgsz, (list, tuple)) and len(imgsz) == 2:
+            input_width, input_height = imgsz[0], imgsz[1]
+        else:
+            input_height, input_width = imgsz, imgsz
+        
         if len(input_shape) == 4 and input_shape[-1] == 12:
             is_space_to_depth = True
     elif len(input_shape) == 4:
@@ -77,9 +80,9 @@ def yolo_pose_extraction(yolo_interpreter: tflite.Interpreter, frame: np.ndarray
             
     yolo_interpreter.set_tensor(input_details['index'], input_data)
     
-    # t1 = time.time()
+    t_infer_start = time.time()
     yolo_interpreter.invoke()
-    # t2 = time.time()
+    t_infer_end = time.time()
     
     output_data = yolo_interpreter.get_tensor(output_details['index'])
     
@@ -183,14 +186,15 @@ def yolo_pose_extraction(yolo_interpreter: tflite.Interpreter, frame: np.ndarray
                     "relative_kpts": relative_kpts
                 })
 
-    # t3 = time.time()
-    # if np.random.rand() < 0.1:
-    #     logger.info(f"YOLO INTERNAL (ms) - Pre: {(t1-t0)*1000:.1f} | EdgeTPU: {(t2-t1)*1000:.1f} | Post: {(t3-t2)*1000:.1f}")
+    t_post_end = time.time()
+    yolo_pre_ms = (t_infer_start - t_yolo_start) * 1000.0
+    yolo_infer_ms = (t_infer_end - t_infer_start) * 1000.0
+    yolo_post_ms = (t_post_end - t_infer_end) * 1000.0
 
-    return people
+    return people, (yolo_pre_ms, yolo_infer_ms, yolo_post_ms)
 
 def gnn_classification(CLASSES: list, gnn_backbone_interpreter: tflite.Interpreter, gnn_head_interpreter: tflite.Interpreter, pose_buffer: deque, frame_count: int, T: int):
-    if len(pose_buffer) == T and frame_count % 5 == 0:
+    if len(pose_buffer) == T and frame_count % 1 == 0:
         t_start_gnn = time.time()
         # pose_buffer contains T frames of shape (C=3, V, M)
         tensor_data = np.stack(pose_buffer, axis=0) # shape: (T, C, V, M)
@@ -230,9 +234,10 @@ def gnn_classification(CLASSES: list, gnn_backbone_interpreter: tflite.Interpret
                 
             features_list.append(features)
 
+        t_pool_start = time.time()
         # Max pooling across M people
         pooled_features = np.max(np.stack(features_list, axis=0), axis=0) # (hidden_dim,)
-        
+        t_pool_end = time.time()
         head_input_details = gnn_head_interpreter.get_input_details()[0]
         head_output_details = gnn_head_interpreter.get_output_details()[0]
         
@@ -265,8 +270,14 @@ def gnn_classification(CLASSES: list, gnn_backbone_interpreter: tflite.Interpret
         
         all_conf = {CLASSES[i]: float(probs[i]) for i in range(len(CLASSES))}
         
-        logger.info(f"GNN Inference (ms) - Backbone (x{M}): {t_bb_total*1000:.1f} | Head: {t_head*1000:.1f} | Total: {(time.time()-t_start_gnn)*1000:.1f}")
+        t_total = time.time() - t_start_gnn
+        gnn_bb_ms = t_bb_total * 1000.0
+        gnn_pool_ms = (t_pool_end - t_pool_start) * 1000.0
+        gnn_head_ms = t_head * 1000.0
+        gnn_pre_ms = (t_total * 1000.0) - gnn_bb_ms - gnn_pool_ms - gnn_head_ms
         
-        return current_label, current_conf, all_conf
+        # logger.info(f"GNN Inference (ms) - Backbone (x{M}): {t_bb_total*1000:.1f} | Head: {t_head*1000:.1f} | Total: {(time.time()-t_start_gnn)*1000:.1f}")
+        
+        return current_label, current_conf, all_conf, (gnn_pre_ms, gnn_bb_ms, gnn_pool_ms, gnn_head_ms)
     
-    return None, None, None
+    return None, None, None, (0.0, 0.0, 0.0, 0.0)

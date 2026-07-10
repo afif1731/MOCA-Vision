@@ -46,3 +46,13 @@ def text_aes_decrypt(encrypted_hex: str, iv_hex: str, auth_tag_hex: str, secret:
         return decrypted_bytes.decode('utf-8')
     except InvalidTag:
         raise ValueError("Failed on encrypting the text...")
+
+def parse_size(env_key, default_val):
+    val = os.getenv(env_key, str(default_val))
+    val = val.strip('[]"\' ')
+    if ',' in val:
+        w, h = val.split(',')
+        return (int(w.strip()), int(h.strip()))
+    else:
+        v = int(val)
+        return (v, v)
