@@ -10,7 +10,7 @@ import numpy as np
 from collections import deque
 import tflite_runtime.interpreter as tflite
 
-from lib.utils import parse_size
+from lib.lib_ai.ai_utils import parse_size
 from lib.lib_ai.detector import yolo_pose_extraction, gnn_classification
 from lib.lib_ai.crowd_cluster import CentroidTracker, spatial_clustering
 from lib.lib_ai.camera_stream import CameraStream
