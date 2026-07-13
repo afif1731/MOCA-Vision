@@ -105,10 +105,10 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
     last_publish_time = 0.0
     
     try:
-        frame_iteration = 0
+        # frame_iteration = 0
         while True:
-            frame_iteration += 1
-            t_recv_start = time.time()
+            # frame_iteration += 1
+            # t_recv_start = time.time()
             
             # 1. Baca Header JPEG (4 bytes)
             jpeg_header = await asyncio.to_thread(recv_exact, client, 4)
@@ -135,9 +135,9 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
             if not json_bytes:
                 break
                 
-            receive_ai_time = (time.time() - t_recv_start) * 1000.0
+            # receive_ai_time = (time.time() - t_recv_start) * 1000.0
             
-            t_post_start = time.time()
+            # t_post_start = time.time()
             events = json.loads(json_bytes.decode('utf-8'))
             
             # --- HITUNG FPS ---
@@ -163,7 +163,7 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
                             "group_id": event["group_id"],
                             "label": event["label"],
                             "confidence": event["confidence"],
-                            "num_persons": len(event.get("skeletons", []))
+                            "num_persons": event["num_persons"]
                         }
                         for event in violence_events
                     ]
@@ -172,7 +172,7 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
             
             should_publish = True
             if not config.get('run_ai', True):
-                if current_time - last_publish_time < 5.0:
+                if current_time - last_publish_time < 3.0:
                     should_publish = False
                 else:
                     last_publish_time = current_time
@@ -194,27 +194,27 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
                     data=rgb_frame.tobytes()
                 )
                 
-            post_process_time = (time.time() - t_post_start) * 1000.0
+            # post_process_time = (time.time() - t_post_start) * 1000.0
             
-            publish_stream_time = 0.0
+            # publish_stream_time = 0.0
             if lk_frame is not None:
-                t_pub_stream_start = time.time()
+                # t_pub_stream_start = time.time()
                 source.capture_frame(lk_frame)
-                publish_stream_time = (time.time() - t_pub_stream_start) * 1000.0
+                # publish_stream_time = (time.time() - t_pub_stream_start) * 1000.0
                 
-            publish_livekit_time = 0.0
+            # publish_livekit_time = 0.0
             if should_publish:
-                t_pub_lk_start = time.time()
+                # t_pub_lk_start = time.time()
                 await publish_violence_detection(detection_data, room)
-                publish_livekit_time = (time.time() - t_pub_lk_start) * 1000.0
+                # publish_livekit_time = (time.time() - t_pub_lk_start) * 1000.0
             
-            publish_backend_time = 0.0
+            # publish_backend_time = 0.0
             if should_publish and len(violence_events) > 0:
-                t_pub_be_start = time.time()
+                # t_pub_be_start = time.time()
                 await send_to_backend(config, ws_detection_payload)
-                publish_backend_time = (time.time() - t_pub_be_start) * 1000.0
+                # publish_backend_time = (time.time() - t_pub_be_start) * 1000.0
                 
-            logger.info(f"frame {frame_iteration}: , receive_ai: {receive_ai_time:.1f} , post_process: {post_process_time:.1f} , publish_stream: {publish_stream_time:.1f} , publish_livekit: {publish_livekit_time:.1f} , publish_backend: {publish_backend_time:.1f}")
+            # logger.info(f"frame {frame_iteration}: , receive_ai: {receive_ai_time:.1f} , post_process: {post_process_time:.1f} , publish_stream: {publish_stream_time:.1f} , publish_livekit: {publish_livekit_time:.1f} , publish_backend: {publish_backend_time:.1f}")
             
             await asyncio.sleep(0.001)
 

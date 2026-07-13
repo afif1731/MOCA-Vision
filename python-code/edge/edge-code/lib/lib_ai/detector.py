@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 import tflite_runtime.interpreter as tflite
 
 def yolo_pose_extraction(yolo_interpreter: tflite.Interpreter, frame: np.ndarray, conf_thresh=0.25, iou_thresh=0.45, imgsz=None):
-    t_yolo_start = time.time()
+    # t_yolo_start = time.time()
     input_details = yolo_interpreter.get_input_details()[0]
     output_details = yolo_interpreter.get_output_details()[0]
     
@@ -80,9 +80,9 @@ def yolo_pose_extraction(yolo_interpreter: tflite.Interpreter, frame: np.ndarray
             
     yolo_interpreter.set_tensor(input_details['index'], input_data)
     
-    t_infer_start = time.time()
+    # t_infer_start = time.time()
     yolo_interpreter.invoke()
-    t_infer_end = time.time()
+    # t_infer_end = time.time()
     
     output_data = yolo_interpreter.get_tensor(output_details['index'])
     
@@ -186,16 +186,17 @@ def yolo_pose_extraction(yolo_interpreter: tflite.Interpreter, frame: np.ndarray
                     "relative_kpts": relative_kpts
                 })
 
-    t_post_end = time.time()
-    yolo_pre_ms = (t_infer_start - t_yolo_start) * 1000.0
-    yolo_infer_ms = (t_infer_end - t_infer_start) * 1000.0
-    yolo_post_ms = (t_post_end - t_infer_end) * 1000.0
+    # t_post_end = time.time()
+    # yolo_pre_ms = (t_infer_start - t_yolo_start) * 1000.0
+    # yolo_infer_ms = (t_infer_end - t_infer_start) * 1000.0
+    # yolo_post_ms = (t_post_end - t_infer_end) * 1000.0
 
-    return people, (yolo_pre_ms, yolo_infer_ms, yolo_post_ms)
+    # return people, (yolo_pre_ms, yolo_infer_ms, yolo_post_ms)
+    return people, (0, 0, 0)
 
 def gnn_classification(CLASSES: list, gnn_backbone_interpreter: tflite.Interpreter, gnn_head_interpreter: tflite.Interpreter, pose_buffer: deque, frame_count: int, T: int):
-    if len(pose_buffer) == T and frame_count % 1 == 0:
-        t_start_gnn = time.time()
+    if len(pose_buffer) == T and frame_count % 5 == 0:
+        # t_start_gnn = time.time()
         # pose_buffer contains T frames of shape (C=3, V, M)
         tensor_data = np.stack(pose_buffer, axis=0) # shape: (T, C, V, M)
         tensor_data = np.transpose(tensor_data, (3, 0, 2, 1)) # shape: (M, T, V, C)
@@ -209,7 +210,7 @@ def gnn_classification(CLASSES: list, gnn_backbone_interpreter: tflite.Interpret
         bb_out_scale, bb_out_zp = bb_output_details['quantization']
         
         features_list = []
-        t_bb_total = 0
+        # t_bb_total = 0
         for m in range(M):
             person_data = tensor_data[m] # (T, V, C)
             input_tensor_float = np.expand_dims(person_data, axis=0).astype(np.float32) # (1, T, V, C)
@@ -221,9 +222,9 @@ def gnn_classification(CLASSES: list, gnn_backbone_interpreter: tflite.Interpret
 
             gnn_backbone_interpreter.set_tensor(bb_input_details['index'], input_tensor_quantized)
             
-            t0 = time.time()
+            # t0 = time.time()
             gnn_backbone_interpreter.invoke()
-            t_bb_total += (time.time() - t0)
+            # t_bb_total += (time.time() - t0)
 
             output_tensor_quantized = gnn_backbone_interpreter.get_tensor(bb_output_details['index'])
             
@@ -234,10 +235,10 @@ def gnn_classification(CLASSES: list, gnn_backbone_interpreter: tflite.Interpret
                 
             features_list.append(features)
 
-        t_pool_start = time.time()
+        # t_pool_start = time.time()
         # Max pooling across M people
         pooled_features = np.max(np.stack(features_list, axis=0), axis=0) # (hidden_dim,)
-        t_pool_end = time.time()
+        # t_pool_end = time.time()
         head_input_details = gnn_head_interpreter.get_input_details()[0]
         head_output_details = gnn_head_interpreter.get_output_details()[0]
         
@@ -253,9 +254,9 @@ def gnn_classification(CLASSES: list, gnn_backbone_interpreter: tflite.Interpret
 
         gnn_head_interpreter.set_tensor(head_input_details['index'], head_input_quantized)
         
-        t1 = time.time()
+        # t1 = time.time()
         gnn_head_interpreter.invoke()
-        t_head = time.time() - t1
+        # t_head = time.time() - t1
 
         head_output_quantized = gnn_head_interpreter.get_tensor(head_output_details['index'])
 
@@ -270,14 +271,15 @@ def gnn_classification(CLASSES: list, gnn_backbone_interpreter: tflite.Interpret
         
         all_conf = {CLASSES[i]: float(probs[i]) for i in range(len(CLASSES))}
         
-        t_total = time.time() - t_start_gnn
-        gnn_bb_ms = t_bb_total * 1000.0
-        gnn_pool_ms = (t_pool_end - t_pool_start) * 1000.0
-        gnn_head_ms = t_head * 1000.0
-        gnn_pre_ms = (t_total * 1000.0) - gnn_bb_ms - gnn_pool_ms - gnn_head_ms
+        # t_total = time.time() - t_start_gnn
+        # gnn_bb_ms = t_bb_total * 1000.0
+        # gnn_pool_ms = (t_pool_end - t_pool_start) * 1000.0
+        # gnn_head_ms = t_head * 1000.0
+        # gnn_pre_ms = (t_total * 1000.0) - gnn_bb_ms - gnn_pool_ms - gnn_head_ms
         
         # logger.info(f"GNN Inference (ms) - Backbone (x{M}): {t_bb_total*1000:.1f} | Head: {t_head*1000:.1f} | Total: {(time.time()-t_start_gnn)*1000:.1f}")
         
-        return current_label, current_conf, all_conf, (gnn_pre_ms, gnn_bb_ms, gnn_pool_ms, gnn_head_ms)
+        # return current_label, current_conf, all_conf, (gnn_pre_ms, gnn_bb_ms, gnn_pool_ms, gnn_head_ms)
+        return current_label, current_conf, all_conf, (0.0, 0.0, 0.0, 0.0)
     
     return None, None, None, (0.0, 0.0, 0.0, 0.0)

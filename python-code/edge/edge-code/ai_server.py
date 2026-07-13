@@ -156,53 +156,53 @@ def handle_client(conn, addr):
         encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
         
         while cap.isOpened():
-            t_read_start = time.time()
+            # t_read_start = time.time()
             ret, frame = cap.read()
-            t_read_ms = (time.time() - t_read_start) * 1000.0
+            # t_read_ms = (time.time() - t_read_start) * 1000.0
             
             if not ret:
                 logger.warning(f"[{camera_id}] Failed to read frame from camera. Waiting...")
                 time.sleep(1.0)
                 continue
 
-            t_resize_start = time.time()
+            # t_resize_start = time.time()
             frame = cv2.resize(frame, FRAME_SIZE)
-            t_resize_ms = (time.time() - t_resize_start) * 1000.0
+            # t_resize_ms = (time.time() - t_resize_start) * 1000.0
             
             events = []
-            yolo_pre_ms, yolo_infer_ms, yolo_post_ms = 0.0, 0.0, 0.0
-            t_indv_total_ms, t_clus_total_ms, t_grp_total_ms = 0.0, 0.0, 0.0
-            total_gnn_pre_ms, total_gnn_bb_ms, total_gnn_pool_ms, total_gnn_head_ms = 0.0, 0.0, 0.0, 0.0
-            num_people, num_group = 0, 0
+            # yolo_pre_ms, yolo_infer_ms, yolo_post_ms = 0.0, 0.0, 0.0
+            # t_indv_total_ms, t_clus_total_ms, t_grp_total_ms = 0.0, 0.0, 0.0
+            # total_gnn_pre_ms, total_gnn_bb_ms, total_gnn_pool_ms, total_gnn_head_ms = 0.0, 0.0, 0.0, 0.0
+            # num_people, num_group = 0, 0
             
             if run_ai:
                 # --- PROSES YOLO POSE ---
-                people, yolo_times = yolo_pose_extraction(
+                people, _ = yolo_pose_extraction(
                     yolo_interpreter=yolo_interpreter,
                     frame=frame,
                     conf_thresh=YOLO_PERSON_CONFIDENCE_THRESHOLD,
                     iou_thresh=YOLO_IOU_THRESHOLD,
                     imgsz=YOLO_IMGSZ
                 )
-                yolo_pre_ms, yolo_infer_ms, yolo_post_ms = yolo_times
-                num_people = len(people)
+                # yolo_pre_ms, yolo_infer_ms, yolo_post_ms = yolo_times
+                # num_people = len(people)
                 
                 # --- INDIVIDUAL TRACKING ---
-                t_indv_start = time.time()
+                # t_indv_start = time.time()
                 all_pelvis = [p["pelvis"] for p in people]
                 tracked_individuals = individual_tracker.update(all_pelvis)
                 for idx, person in enumerate(people):
                     person["individual_id"] = tracked_individuals.get(idx, -1)
-                t_indv_total_ms = (time.time() - t_indv_start) * 1000.0
+                # t_indv_total_ms = (time.time() - t_indv_start) * 1000.0
                 
-                t_clus_start = time.time()
+                # t_clus_start = time.time()
                 clusters = spatial_clustering(
                     people=people,
                     max_distance=SPATIAL_CLUSTERING_MAX_DISTANCE
                 )
-                t_clus_total_ms = (time.time() - t_clus_start) * 1000.0
+                # t_clus_total_ms = (time.time() - t_clus_start) * 1000.0
                 
-                t_grp_start = time.time()
+                # t_grp_start = time.time()
                 cluster_centroids = []
                 for cluster in clusters:
                     cx = sum(p["pelvis"][0] for p in cluster) / len(cluster)
@@ -210,8 +210,8 @@ def handle_client(conn, addr):
                     cluster_centroids.append([cx, cy])
                     
                 tracked = tracker.update(cluster_centroids)
-                t_grp_total_ms = (time.time() - t_grp_start) * 1000.0
-                num_group = len(tracked)
+                # t_grp_total_ms = (time.time() - t_grp_start) * 1000.0
+                # num_group = len(tracked)
                 
                 active_ind_ids = set(individual_tracker.objects.keys())
                 
@@ -266,7 +266,7 @@ def handle_client(conn, addr):
                     cluster_buffers[object_id].append(frame_pose_data)
                     
                     # --- PROSES GCN-TCN ---
-                    new_label, new_conf, all_conf, gnn_times = gnn_classification(
+                    new_label, new_conf, _, _ = gnn_classification(
                         classes,
                         gnn_backbone_interpreter,
                         gnn_head_interpreter,
@@ -275,10 +275,10 @@ def handle_client(conn, addr):
                         t_frames
                     )
                     
-                    total_gnn_pre_ms += gnn_times[0]
-                    total_gnn_bb_ms += gnn_times[1]
-                    total_gnn_pool_ms += gnn_times[2]
-                    total_gnn_head_ms += gnn_times[3]
+                    # total_gnn_pre_ms += gnn_times[0]
+                    # total_gnn_bb_ms += gnn_times[1]
+                    # total_gnn_pool_ms += gnn_times[2]
+                    # total_gnn_head_ms += gnn_times[3]
                     
                     if new_label is not None and new_conf is not None:
                         cluster_labels[object_id]["label"] = new_label
@@ -294,6 +294,7 @@ def handle_client(conn, addr):
                         "group_id": object_id,
                         "label": current_label,
                         "confidence": round(current_conf, 2),
+                        "num_persons": len(cluster_people),
                         "skeletons": absolute_skeletons
                     })
                 
@@ -305,7 +306,7 @@ def handle_client(conn, addr):
                     if obj_id in cluster_slot_assignment:
                         del cluster_slot_assignment[obj_id]
                     
-            t_tx_start = time.time()
+            # t_tx_start = time.time()
             # Encode frame to JPEG
             ret, jpeg = cv2.imencode('.jpg', frame, encode_param)
             jpeg_bytes = jpeg.tobytes()
@@ -320,10 +321,13 @@ def handle_client(conn, addr):
             header_json = struct.pack('>I', len(json_bytes))
             conn.sendall(header_json + json_bytes)
             
-            t_tx_ms = (time.time() - t_tx_start) * 1000.0
+            # t_tx_ms = (time.time() - t_tx_start) * 1000.0
             
-            logger.info(f"frame {frame_count}: , num_people: {num_people} , num_group: {num_group} , read: {t_read_ms:.1f} , resize: {t_resize_ms:.1f} , yolo_pre: {yolo_pre_ms:.1f} , yolo_infer: {yolo_infer_ms:.1f} , yolo_post: {yolo_post_ms:.1f} , track_indv_total: {t_indv_total_ms:.1f} , clustering_total: {t_clus_total_ms:.1f} , track_group_total: {t_grp_total_ms:.1f} , gnn_pre: {total_gnn_pre_ms:.1f} , gnn_backbone: {total_gnn_bb_ms:.1f} , gnn_pool: {total_gnn_pool_ms:.1f} , gnn_head: {total_gnn_head_ms:.1f} , transmit: {t_tx_ms:.1f}")
+            # logger.info(f"frame {frame_count}: , num_people: {num_people} , num_group: {num_group} , read: {t_read_ms:.1f} , resize: {t_resize_ms:.1f} , yolo_pre: {yolo_pre_ms:.1f} , yolo_infer: {yolo_infer_ms:.1f} , yolo_post: {yolo_post_ms:.1f} , track_indv_total: {t_indv_total_ms:.1f} , clustering_total: {t_clus_total_ms:.1f} , track_group_total: {t_grp_total_ms:.1f} , gnn_pre: {total_gnn_pre_ms:.1f} , gnn_backbone: {total_gnn_bb_ms:.1f} , gnn_pool: {total_gnn_pool_ms:.1f} , gnn_head: {total_gnn_head_ms:.1f} , transmit: {t_tx_ms:.1f}")
             
+            if frame_count % 5 == 0:
+                frame_count = 0
+
             frame_count += 1
             
     except (ConnectionResetError, BrokenPipeError):

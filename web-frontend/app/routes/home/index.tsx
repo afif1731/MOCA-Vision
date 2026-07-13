@@ -72,7 +72,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
     <div
       className={cn(
         'relative block w-full bg-slate-100',
-        'min-h-screen overflow-y-auto lg:h-screen lg:max-h-screen lg:overflow-hidden'
+        'max-h-screen overflow-y-auto lg:h-screen lg:max-h-screen lg:overflow-hidden'
       )}
     >
       {token ? (

@@ -62,7 +62,7 @@ export default function CctvSettingsPage() {
     <div
       className={cn(
         'block w-full bg-slate-100 px-8 py-8',
-        isMobile ? 'min-h-lvh' : 'h-screen max-h-screen'
+        isMobile ? 'min-h-lvh' : 'h-screen max-h-screen overflow-y-auto'
       )}
     >
       <TitleSection title="Edge Device Settings" />
