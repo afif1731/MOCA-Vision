@@ -4,7 +4,8 @@ import { type ViolenceEvent, ViolenceEventLabel } from '@/schemas/types';
 export function abnormalCheck(event: ViolenceEvent) {
   if (
     event.label !== ViolenceEventLabel.analyzing &&
-    event.label !== ViolenceEventLabel.normal_event
+    event.label !== ViolenceEventLabel.normal_event &&
+    event.num_persons > 1
   ) {
     if (ViolenceDetectionConfig.USE_GLOBAL_VIOLENCE_THRESHOLD) {
       if (event.confidence > ViolenceDetectionConfig.VIOLENCE_GLOBAL_CONFIDENCE_THRESHOLD)

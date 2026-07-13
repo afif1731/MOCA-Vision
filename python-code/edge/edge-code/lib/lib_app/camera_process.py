@@ -194,6 +194,10 @@ async def run_camera_process(camera, room, config, backend_url, device_secret):
                     data=rgb_frame.tobytes()
                 )
                 
+                # Update detection_data with actual frame dimensions for frontend canvas scaling
+                detection_data["width"] = rgb_frame.shape[1]
+                detection_data["height"] = rgb_frame.shape[0]
+                
             # post_process_time = (time.time() - t_post_start) * 1000.0
             
             # publish_stream_time = 0.0

@@ -131,8 +131,8 @@ export function SkeletonOverlay({
   return (
     <canvas
       ref={canvasRef}
-      width={640}
-      height={640}
+      width={eventData?.width || 640}
+      height={eventData?.height || 320}
       className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
     />
   );

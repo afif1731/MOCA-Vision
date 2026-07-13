@@ -26,6 +26,8 @@ export type IViolenceEventLabel = v.InferInput<typeof violenceEventLabelSchema>;
 export interface ViolenceDetectionPayload {
   camera_id: string;
   fps: number;
+  width?: number;
+  height?: number;
   events: ViolenceEvent[];
 }
 
@@ -33,6 +35,7 @@ export interface ViolenceEvent {
   group_id: number;
   label: IViolenceEventLabel;
   confidence: number;
+  num_persons: number;
   skeletons: AbsoluteSkeleton[];
 }
 
