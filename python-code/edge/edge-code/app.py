@@ -5,7 +5,6 @@ import logging
 import signal
 from uuid6 import uuid7
 from dotenv import load_dotenv
-from livekit import rtc
 from livekit.rtc import Room
 
 from lib.lib_app.get_camera import fetch_cameras

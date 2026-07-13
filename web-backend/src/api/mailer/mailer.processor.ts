@@ -25,7 +25,12 @@ export class MailQueue {
         });
 
         try {
+          const startTime = new Date(Date.now());
           await transporter.sendMail(job.data);
+          const totalSendTime =
+            new Date(Date.now()).getTime() - startTime.getTime();
+
+          logger.info(`Email send with speed ${totalSendTime}ms`);
         } catch (error) {
           logger.error(error);
         }

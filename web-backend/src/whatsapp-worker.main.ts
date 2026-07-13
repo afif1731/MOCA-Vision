@@ -18,8 +18,14 @@ function startWhatsappWorker(): void {
     'wa-queue-processor',
     async job => {
       const payload = job.data;
+      const startTime = new Date(Date.now());
 
       await whatsappClient.sendMessage(payload.recepient, payload.message);
+
+      const totalSendTime =
+        new Date(Date.now()).getTime() - startTime.getTime();
+
+      logger.info(`Message send with speed ${totalSendTime}ms`);
 
       await sleep(1000);
     },
