@@ -27,6 +27,10 @@ import { LiveKitConfig, logger } from '../common';
 
 export class LivekitListener {
   private room: Room;
+  private activeStreams = new Map<
+    string,
+    { stream: VideoStream; reader: ReadableStreamDefaultReader<any> }
+  >();
 
   constructor() {
     this.room = new Room();
@@ -67,8 +71,24 @@ export class LivekitListener {
               return;
             }
 
+            // Cancel old stream if it exists for this track name to prevent duplicate loops
+            if (this.activeStreams.has(track.name)) {
+              logger.info(
+                `🔄 [LivekitListener] Track ${track.name} already active. Canceling old stream...`,
+              );
+              const old = this.activeStreams.get(track.name)!;
+
+              try {
+                old.reader.cancel().catch(() => {});
+              } catch {
+                return;
+              }
+            }
+
             const stream = new VideoStream(track as RemoteVideoTrack);
             const reader = stream.getReader();
+
+            this.activeStreams.set(track.name, { stream, reader });
 
             (async () => {
               try {
@@ -82,6 +102,23 @@ export class LivekitListener {
           }
         },
       );
+
+      this.room.on(RoomEvent.TrackUnsubscribed, track => {
+        if (track.kind === TrackKind.KIND_VIDEO && track.name) {
+          logger.info(`🛑 [LivekitListener] Track unsubscribed: ${track.name}`);
+          const active = this.activeStreams.get(track.name);
+
+          if (active) {
+            try {
+              active.reader.cancel().catch(() => {});
+            } catch {
+              return;
+            }
+
+            this.activeStreams.delete(track.name);
+          }
+        }
+      });
 
       await this.room.connect(LiveKitConfig.URL, tokenString, {
         autoSubscribe: true,
