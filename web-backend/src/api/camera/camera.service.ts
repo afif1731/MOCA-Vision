@@ -53,9 +53,9 @@ export abstract class CameraService {
       rtspAuthTag = encryptedPasswordObject.authTag;
     }
 
-    if (data.device_id) {
+    if (data.edge_device_id) {
       const device = await prisma.edgeDevices.findUnique({
-        where: { id: data.device_id },
+        where: { id: data.edge_device_id },
         select: {
           id: true,
           max_cameras: true,
@@ -85,7 +85,7 @@ export abstract class CameraService {
         rtsp_password: rtspPassword,
         rtsp_iv: rtspIv,
         rtsp_authtag: rtspAuthTag,
-        edge_device_id: data.device_id,
+        edge_device_id: data.edge_device_id,
       },
       select: {
         id: true,
@@ -98,8 +98,8 @@ export abstract class CameraService {
       },
     });
 
-    if (data.device_id) {
-      WebsocketPublisher.cameraCreate(data.device_id, {
+    if (data.edge_device_id) {
+      WebsocketPublisher.cameraCreate(data.edge_device_id, {
         camera_id: newCamera.id,
         source: newCamera.source,
         source_type: newCamera.source_type,
@@ -227,9 +227,12 @@ export abstract class CameraService {
         data.source_type || currentCamera.source_type,
       );
 
-    if (data.device_id && data.device_id !== currentCamera.edge_device_id) {
+    if (
+      data.edge_device_id &&
+      data.edge_device_id !== currentCamera.edge_device_id
+    ) {
       const isDeviceExist = await prisma.edgeDevices.findUnique({
-        where: { id: data.device_id },
+        where: { id: data.edge_device_id },
         select: {
           id: true,
           max_cameras: true,
@@ -282,7 +285,7 @@ export abstract class CameraService {
         rtsp_password: rtspPassword,
         rtsp_iv: rtspIv,
         rtsp_authtag: rtspAuthTag,
-        edge_device_id: data.device_id,
+        edge_device_id: data.edge_device_id,
         cv_treshold: data.cv_threshold,
         status: data.status,
         error_message: errorObject,
@@ -300,11 +303,14 @@ export abstract class CameraService {
     });
 
     if (currentCamera.edge_device_id) {
-      if (data.device_id && currentCamera.edge_device_id !== data.device_id) {
+      if (
+        data.edge_device_id &&
+        currentCamera.edge_device_id !== data.edge_device_id
+      ) {
         WebsocketPublisher.cameraDelete(currentCamera.edge_device_id, {
           camera_id,
         });
-        WebsocketPublisher.cameraCreate(data.device_id, {
+        WebsocketPublisher.cameraCreate(data.edge_device_id, {
           camera_id: updatedCamera.id,
           source: updatedCamera.source,
           source_type: updatedCamera.source_type,
@@ -313,7 +319,7 @@ export abstract class CameraService {
           rtsp_iv: updatedCamera.rtsp_iv,
           rtsp_authtag: updatedCamera.rtsp_authtag,
         });
-      } else if (data.device_id === null) {
+      } else if (data.edge_device_id === null) {
         WebsocketPublisher.cameraDelete(currentCamera.edge_device_id, {
           camera_id,
         });
@@ -353,8 +359,8 @@ export abstract class CameraService {
           });
         }
       }
-    } else if (data.device_id && updatedCamera.status === 'ONLINE') {
-      WebsocketPublisher.cameraCreate(data.device_id, {
+    } else if (data.edge_device_id && updatedCamera.status === 'ONLINE') {
+      WebsocketPublisher.cameraCreate(data.edge_device_id, {
         camera_id: updatedCamera.id,
         source: updatedCamera.source,
         source_type: updatedCamera.source_type,
