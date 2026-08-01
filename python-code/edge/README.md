@@ -2,7 +2,7 @@
 
 ### To Run Violence Detector Test
 
-This code is now can only run in Edge Device with TPU environment
+This code is now can run in either Edge Device or Cloud with linux operation system
 
 **Important Note:** There is a possibility that your coral dev board has different runtime version than the required (v14, not v13).
 
@@ -48,7 +48,7 @@ uv pip install -r requirements.edge.txt
 
 4. Download the models, you can use my models (Converted YOLOv8n-pose & Custom GCN Model) [here](https://drive.google.com/drive/folders/1KFOK7eS0uXo3yNqFNyNA-N1RghYFYC6E)
 
-5. Put the models in `./edge-code/_model`, you can name it differently and set the name on env file. If not configured on env file, this would be the default value:
+5. Put the models in `./edge-code/_model`, you can name it differently and set the name on env file. If not configured on env file, this would be the default value:  
 
 - **YOLO Model**: `yolov8n-pose_full_integer_quant_edgetpu.tflite`
 - **GCN Model**: `GCN_LSTM_best_int8_edgetpu.tflite`
@@ -60,15 +60,38 @@ But IDK, haven't try it yet. Let me know if it is actually possible.
 6. Set up a `.env` file
 
 ```conf
+# App Config
 DEVICE_ID="019e0d16-6faf-798b-94e2-48a3090347af"
 BACKEND_URL="http://localhost:4000"
 
 LIVEKIT_URL="ws://localhost:7880"
 LIVEKIT_DEVICE_SECRET="supersecretvalue"
 
+# AI Server Config
 YOLO_FILE="yolov8n-pose_full_integer_quant_edgetpu.tflite"
 GNN_BACKBONE_FILE="GNN_TCN_backbone_best_int8_edgetpu.tflite"
 GNN_HEAD_FILE="GNN_TCN_head_best_int8.tflite"
+
+# CPU Core used for allocating head model
+CPU_USE_CORE="4"
+
+# In case of different tpu or gpu lib, change this value
+EDGETPU_SHARED_LIB="libedgetpu.so.1"
+
+STREAM_FRAME_SIZE="640" # or [640,640]
+YOLO_IMGSZ="256" # or [256,256]
+
+YOLO_PERSON_CONFIDENCE_THRESHOLD="0.1"
+YOLO_IOU_THRESHOLD="0.3"
+
+# Centroid Tracker & Clustering Config
+GROUP_TRACKER_MAX_DISAPPEARED="100" # Frame
+GROUP_TRACKER_MAX_DISTANCE="150" # Pixel
+
+INDIVIDUAL_TRACKER_MAX_DISAPPEARED="10" # Frame
+INDIVIDUAL_TRACKER_MAX_DISTANCE="70" # Pixel
+
+SPATIAL_CLUSTERING_MAX_DISTANCE="150" # Pixel
 ```
 
 7. Run the AI Model using Coral's build-in python 3.7

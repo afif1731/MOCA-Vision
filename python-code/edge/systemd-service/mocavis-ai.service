@@ -8,7 +8,7 @@ After=network.target
 User=mendel
 
 # Make sure this path is directed toward the edge code folder
-WorkingDirectory=/mnt/sdcard/Tugas-Akhir_MonoRepo/python-code/edge
+WorkingDirectory=/mnt/sdcard/MOCA-Vision/python-code/edge
 
 # This one needs to be directed toward the python file on your new uv venv
 ExecStart=python3 ./edge-code/ai_server.py

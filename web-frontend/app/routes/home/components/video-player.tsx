@@ -133,7 +133,6 @@ function mapPageTracks(
 
   for (let i = 0; i < maxTrack; i++) {
     const camera = content.cameras[startIndex + i];
-    // On mobile, if we reach the end of cameras, stop rendering empty slots
     if (isMobile && !camera) continue;
 
     newTrack.push({

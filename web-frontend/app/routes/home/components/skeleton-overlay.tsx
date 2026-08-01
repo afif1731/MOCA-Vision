@@ -42,15 +42,13 @@ export function SkeletonOverlay({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (!eventData || !eventData.events || !Array.isArray(eventData.events)) return;
 
     eventData.events.forEach((event) => {
-      // Determine color based on label
       const isAbnormal = abnormalCheck(event);
-      const color = isAbnormal ? '#ef4444' : '#22c55e'; // red-500 or green-500
+      const color = isAbnormal ? '#ef4444' : '#22c55e';
 
       let minX = Number.POSITIVE_INFINITY;
       let minY = Number.POSITIVE_INFINITY;
@@ -60,7 +58,6 @@ export function SkeletonOverlay({
       if (!event.skeletons || !Array.isArray(event.skeletons)) return;
 
       event.skeletons.forEach((skeleton) => {
-        // Calculate Group Box
         if (skeleton.box && Array.isArray(skeleton.box) && skeleton.box.length === 4) {
           const [x, y, w, h] = skeleton.box;
           if (x < minX) minX = x;
@@ -69,9 +66,7 @@ export function SkeletonOverlay({
           if (y + h > maxY) maxY = y + h;
         }
 
-        // Draw Skeleton
         if (showSkeleton && skeleton.keypoints && Array.isArray(skeleton.keypoints)) {
-          // Draw points
           skeleton.keypoints.forEach((kp) => {
             if (!kp || kp.length < 3) return;
             const [x, y, conf] = kp;
@@ -83,7 +78,6 @@ export function SkeletonOverlay({
             }
           });
 
-          // Draw connections
           ctx.lineWidth = 2;
           ctx.strokeStyle = color;
           CONNECTIONS.forEach(([i, j]) => {
@@ -99,7 +93,6 @@ export function SkeletonOverlay({
         }
       });
 
-      // Draw Group Box
       if (showBox && minX !== Number.POSITIVE_INFINITY) {
         const x = minX;
         const y = minY;
@@ -112,12 +105,10 @@ export function SkeletonOverlay({
         ctx.strokeStyle = color;
         ctx.stroke();
 
-        // Optional: draw label and confidence above the box
         ctx.fillStyle = color;
         ctx.font = 'bold 14px sans-serif';
         const text = `${ViolenceEventLabelMap[event.label]} (${(event.confidence * 100).toFixed(1)}%)`;
 
-        // Add a background for the text for better visibility
         const textWidth = ctx.measureText(text).width;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         ctx.fillRect(x, y > 20 ? y - 20 : y, textWidth + 8, 20);
